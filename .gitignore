@@ -1,0 +1,20 @@
+# Secretos y entorno
+.env
+*.pem
+*.key
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+
+# Docker / datos locales
+pgdata/
+*.log
+
+# Sistema y editores
+.DS_Store
+.vscode/
+.idea/
