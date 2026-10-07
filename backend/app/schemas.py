@@ -111,3 +111,37 @@ class TechnicianOut(BaseModel):
     specialty: str | None
     level: str
     is_active: bool
+
+
+class ComputerCreate(BaseModel):
+    hostname: str = Field(min_length=2, max_length=100)
+    serial_number: str | None = Field(default=None, max_length=100)
+    brand: str | None = Field(default=None, max_length=100)
+    model: str | None = Field(default=None, max_length=100)
+    os: str | None = Field(default=None, max_length=100)
+    assigned_to: int | None = None
+    department_id: int | None = None
+
+
+class ComputerUpdate(BaseModel):
+    hostname: str | None = Field(default=None, min_length=2, max_length=100)
+    serial_number: str | None = Field(default=None, max_length=100)
+    brand: str | None = Field(default=None, max_length=100)
+    model: str | None = Field(default=None, max_length=100)
+    os: str | None = Field(default=None, max_length=100)
+    assigned_to: int | None = None
+    department_id: int | None = None
+
+
+class ComputerOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    hostname: str
+    serial_number: str | None
+    brand: str | None
+    model: str | None
+    os: str | None
+    assigned_to: int | None
+    department_id: int | None
+    created_at: datetime

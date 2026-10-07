@@ -52,3 +52,17 @@ class Technician(Base):
     specialty: Mapped[str | None] = mapped_column(String(100))
     level: Mapped[str] = mapped_column(String(5), default="N1")
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+class Computer(Base):
+    __tablename__ = "computers"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    hostname: Mapped[str] = mapped_column(String(100), unique=True)
+    serial_number: Mapped[str | None] = mapped_column(String(100), unique=True)
+    brand: Mapped[str | None] = mapped_column(String(100))
+    model: Mapped[str | None] = mapped_column(String(100))
+    os: Mapped[str | None] = mapped_column(String(100))
+    assigned_to: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
+    department_id: Mapped[int | None] = mapped_column(ForeignKey("departments.id"))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
