@@ -1,7 +1,7 @@
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, String, Text, func
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, func
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
 class Base(DeclarativeBase):
@@ -52,6 +52,7 @@ class Technician(Base):
     specialty: Mapped[str | None] = mapped_column(String(100))
     level: Mapped[str] = mapped_column(String(5), default="N1")
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    user: Mapped["User"] = relationship()
 
 
 class Computer(Base):
@@ -66,3 +67,30 @@ class Computer(Base):
     assigned_to: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
     department_id: Mapped[int | None] = mapped_column(ForeignKey("departments.id"))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class Ticket(Base):
+    __tablename__ = "tickets"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    title: Mapped[str] = mapped_column(String(200))
+    description: Mapped[str] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(String(20), default="Abierto")
+    priority_id: Mapped[int] = mapped_column(ForeignKey("priorities.id"))
+    category_id: Mapped[int] = mapped_column(ForeignKey("categories.id"))
+    created_by: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    assigned_to: Mapped[int | None] = mapped_column(ForeignKey("technicians.id"))
+    computer_id: Mapped[int | None] = mapped_column(ForeignKey("computers.id"))
+    diagnosis: Mapped[str | None] = mapped_column(Text)
+    solution: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    resolution_minutes: Mapped[int | None] = mapped_column(Integer)
+
+    priority: Mapped["Priority"] = relationship()
+    category: Mapped["Category"] = relationship()
+    creator: Mapped["User"] = relationship(foreign_keys=[created_by])
+    technician: Mapped["Technician | None"] = relationship()
+    computer: Mapped["Computer | None"] = relationship()
+
+

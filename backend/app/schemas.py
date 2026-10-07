@@ -145,3 +145,35 @@ class ComputerOut(BaseModel):
     assigned_to: int | None
     department_id: int | None
     created_at: datetime
+
+
+class TicketCreate(BaseModel):
+    title: str = Field(min_length=3, max_length=200)
+    description: str = Field(min_length=5)
+    priority_id: int
+    category_id: int
+    created_by: int  # provisional hasta la Fase 5 (autenticación)
+    computer_id: int | None = None
+
+
+class TicketOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    title: str
+    description: str
+    status: str
+    priority_id: int
+    category_id: int
+    created_by: int
+    assigned_to: int | None
+    computer_id: int | None
+    diagnosis: str | None
+    solution: str | None
+    created_at: datetime
+    resolved_at: datetime | None
+    resolution_minutes: int | None
+    priority_name: str
+    category_name: str
+    creator_name: str
+    technician_name: str | None
