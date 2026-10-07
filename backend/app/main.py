@@ -3,11 +3,15 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.routers import departments
+from app.routers import categories, departments, priorities, technicians, users
 
-app = FastAPI(title="Help Desk API", version="0.2.0")
+app = FastAPI(title="Help Desk API", version="0.4.0")
 
 app.include_router(departments.router)
+app.include_router(categories.router)
+app.include_router(priorities.router)
+app.include_router(users.router)
+app.include_router(technicians.router)
 
 
 @app.get("/health")
