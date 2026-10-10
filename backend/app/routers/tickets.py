@@ -1,10 +1,12 @@
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
 from app.database import get_db
 from app.models import Category, Computer, Priority, Technician, Ticket, User
-from app.schemas import TicketCreate, TicketOut
+from app.schemas import TicketAssign, TicketCreate, TicketOut, TicketStatusChange
 
 router = APIRouter(prefix="/tickets", tags=["Tickets"])
 
@@ -14,6 +16,14 @@ LOAD_OPTIONS = (
     selectinload(Ticket.creator),
     selectinload(Ticket.technician).selectinload(Technician.user),
 )
+
+ALLOWED_TRANSITIONS = {
+    "Abierto": {"En progreso"},
+    "En progreso": {"Pendiente", "Resuelto"},
+    "Pendiente": {"En progreso"},
+    "Resuelto": {"Cerrado", "En progreso"},
+    "Cerrado": set(),
+}
 
 
 def to_out(ticket: Ticket) -> TicketOut:
@@ -71,3 +81,72 @@ def create_ticket(data: TicketCreate, db: Session = Depends(get_db)):
     db.add(ticket)
     db.commit()
     return to_out(get_or_404(db, ticket.id))
+
+
+@router.patch("/{ticket_id}/assign", response_model=TicketOut)
+def assign_ticket(ticket_id: int, data: TicketAssign, db: Session = Depends(get_db)):
+    ticket = get_or_404(db, ticket_id)
+    if ticket.status in ("Resuelto", "Cerrado"):
+        raise HTTPException(
+            status_code=409,
+            detail=f"No se puede asignar un ticket en estado '{ticket.status}'",
+        )
+    technician = db.scalars(
+        select(Technician)
+        .where(Technician.id == data.technician_id)
+        .options(selectinload(Technician.user))
+    ).first()
+    if technician is None:
+        raise HTTPException(status_code=422, detail="El técnico indicado no existe")
+    if not technician.is_active or not technician.user.is_active:
+        raise HTTPException(status_code=422, detail="El técnico indicado está inactivo")
+    ticket.assigned_to = technician.id
+    db.commit()
+    return to_out(get_or_404(db, ticket_id))
+
+
+@router.patch("/{ticket_id}/status", response_model=TicketOut)
+def change_status(ticket_id: int, data: TicketStatusChange, db: Session = Depends(get_db)):
+    ticket = get_or_404(db, ticket_id)
+    current, new = ticket.status, data.status
+
+    if new == current:
+        raise HTTPException(status_code=409, detail=f"El ticket ya está en estado '{current}'")
+
+    allowed = ALLOWED_TRANSITIONS[current]
+    if new not in allowed:
+        options = ", ".join(sorted(allowed)) or "ninguno (estado final)"
+        raise HTTPException(
+            status_code=409,
+            detail=f"Transición no permitida: '{current}' -> '{new}'. Permitidos desde '{current}': {options}",
+        )
+
+    if new == "En progreso" and ticket.assigned_to is None:
+        raise HTTPException(
+            status_code=409,
+            detail="El ticket debe tener un técnico asignado antes de pasar a 'En progreso'",
+        )
+
+    if new == "Resuelto":
+        if not (data.diagnosis or ticket.diagnosis):
+            raise HTTPException(status_code=422, detail="Para resolver hay que registrar el diagnóstico")
+        if not (data.solution or ticket.solution):
+            raise HTTPException(status_code=422, detail="Para resolver hay que registrar la solución")
+
+    if data.diagnosis is not None:
+        ticket.diagnosis = data.diagnosis
+    if data.solution is not None:
+        ticket.solution = data.solution
+
+    if new == "Resuelto":
+        now = datetime.now(timezone.utc)
+        ticket.resolved_at = now
+        seconds = (now - ticket.created_at).total_seconds()
+        ticket.resolution_minutes = max(0, round(seconds / 60))
+    elif current == "Resuelto" and new == "En progreso":
+        ticket.resolved_at = None
+        ticket.resolution_minutes = None
+
+    ticket.status = new
+    db.commit()
+    return to_out(get_or_404(db, ticket_id))
