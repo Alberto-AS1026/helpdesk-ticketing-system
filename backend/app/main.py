@@ -3,6 +3,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.dependencies import ADMIN_ONLY, ALL_ROLES, STAFF, protect
 from app.routers import (
     auth,
     categories,
@@ -14,16 +15,33 @@ from app.routers import (
     users,
 )
 
-app = FastAPI(title="Help Desk API", version="0.8.0")
+app = FastAPI(title="Help Desk API", version="0.9.0")
 
+# Público: login
 app.include_router(auth.router)
-app.include_router(departments.router)
-app.include_router(categories.router)
-app.include_router(priorities.router)
-app.include_router(users.router)
-app.include_router(technicians.router)
-app.include_router(computers.router)
-app.include_router(tickets.router)
+
+# Política de permisos: un único lugar para auditar quién puede qué
+app.include_router(
+    departments.router, dependencies=[Depends(protect(read=ALL_ROLES, write=ADMIN_ONLY))]
+)
+app.include_router(
+    categories.router, dependencies=[Depends(protect(read=ALL_ROLES, write=ADMIN_ONLY))]
+)
+app.include_router(
+    priorities.router, dependencies=[Depends(protect(read=ALL_ROLES, write=ADMIN_ONLY))]
+)
+app.include_router(
+    users.router, dependencies=[Depends(protect(read=STAFF, write=ADMIN_ONLY))]
+)
+app.include_router(
+    technicians.router, dependencies=[Depends(protect(read=STAFF, write=ADMIN_ONLY))]
+)
+app.include_router(
+    computers.router, dependencies=[Depends(protect(read=ALL_ROLES, write=STAFF))]
+)
+app.include_router(
+    tickets.router, dependencies=[Depends(protect(read=ALL_ROLES, write=ALL_ROLES))]
+)
 
 
 @app.get("/health")
