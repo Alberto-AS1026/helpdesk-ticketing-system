@@ -177,3 +177,16 @@ class TicketOut(BaseModel):
     category_name: str
     creator_name: str
     technician_name: str | None
+
+
+TicketStatus = Literal["Abierto", "En progreso", "Pendiente", "Resuelto", "Cerrado"]
+
+
+class TicketAssign(BaseModel):
+    technician_id: int
+
+
+class TicketStatusChange(BaseModel):
+    status: TicketStatus
+    diagnosis: str | None = Field(default=None, min_length=3)
+    solution: str | None = Field(default=None, min_length=3)
