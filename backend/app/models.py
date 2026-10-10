@@ -52,6 +52,7 @@ class Technician(Base):
     specialty: Mapped[str | None] = mapped_column(String(100))
     level: Mapped[str] = mapped_column(String(5), default="N1")
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+
     user: Mapped["User"] = relationship()
 
 
@@ -94,3 +95,27 @@ class Ticket(Base):
     computer: Mapped["Computer | None"] = relationship()
 
 
+class TicketComment(Base):
+    __tablename__ = "ticket_comments"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    ticket_id: Mapped[int] = mapped_column(ForeignKey("tickets.id"))
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    comment: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    author: Mapped["User"] = relationship()
+
+
+class TicketHistory(Base):
+    __tablename__ = "ticket_history"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    ticket_id: Mapped[int] = mapped_column(ForeignKey("tickets.id"))
+    changed_by: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    field_name: Mapped[str] = mapped_column(String(50))
+    old_value: Mapped[str | None] = mapped_column(Text)
+    new_value: Mapped[str | None] = mapped_column(Text)
+    changed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    user: Mapped["User"] = relationship()
