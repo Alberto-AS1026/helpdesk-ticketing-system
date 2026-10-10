@@ -21,7 +21,7 @@ diagnóstico, solución y prevención**.
 | Docker y PostgreSQL | 3, 4, 5 |
 | Python y entorno | 6, 7, 8, 9 |
 | API y errores HTTP | 10, 11, 12, 13, 14 |
-| Git y GitHub | 15, 16, 17, 18, 19 |
+| Git y GitHub | 15, 16, 17, 18, 19, 24 |
 | Edición de archivos | 20, 21 |
 | Terminal y shell | 22, 23 |
 
@@ -490,3 +490,24 @@ IndentationError: unexpected indent
 **Diagnóstico:** los comandos de Git no necesitan el `.venv`, pero sí estar dentro del repositorio. Los de Python (`uvicorn`, `pip`, `pytest`) sí necesitan el entorno activo. Una terminal ocupada por Uvicorn no puede usarse para otros comandos.
 
 **Prevención:** usar una terminal para la API y otra para pruebas y Git. Antes de ejecutar, comprobar con `pwd` y el prompt.
+
+## 24. Pull Request abierto con conflictos que ya no hacen falta
+
+**Síntoma:** un PR antiguo (`feature/tickets-comments` → `main`) muestra `This branch has conflicts that must be resolved` en `models.py`, `schemas.py` y `tickets.py`.
+
+**Hipótesis:** (1) `main` ya contiene ese código por otra rama; (2) `main` no lo tiene y hay que integrarlo.
+
+**Comprobaciones:**
+```bash
+git fetch origin
+git branch --merged main
+git log --oneline --all --graph | head -15
+grep -c "^class " backend/app/models.py backend/app/schemas.py
+grep -c "def comment_to_out" backend/app/routers/tickets.py
+```
+
+**Diagnóstico:** los tres archivos en conflicto se habían reescrito por completo en una rama posterior (`feature/tickets-history`), ya mergeada. El PR antiguo quedó abierto y desfasado, y por eso chocaba con `main`.
+
+**Solución:** comprobar que `main` ya tiene el contenido (10 clases en `models.py`, 26 en `schemas.py`), cerrar el PR sin mergear y borrar la rama (`git push origin --delete rama`, `git branch -D rama`).
+
+**Prevención:** mergear cada PR antes de crear la rama siguiente. Si una rama posterior reescribe los mismos archivos, cerrar el PR anterior en vez de resolver conflictos de código que ya está integrado. Revisar de vez en cuando la pestaña **Pull requests** por si queda alguno abierto.
