@@ -4,6 +4,8 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
+# ---------- Departamentos ----------
+
 class DepartmentCreate(BaseModel):
     """Datos que el cliente envía para crear."""
     name: str = Field(min_length=2, max_length=100)
@@ -25,6 +27,8 @@ class DepartmentOut(BaseModel):
     description: str | None
 
 
+# ---------- Categorías ----------
+
 class CategoryCreate(BaseModel):
     name: str = Field(min_length=2, max_length=100)
 
@@ -39,6 +43,8 @@ class CategoryOut(BaseModel):
     id: int
     name: str
 
+
+# ---------- Prioridades ----------
 
 class PriorityCreate(BaseModel):
     name: str = Field(min_length=2, max_length=50)
@@ -57,6 +63,8 @@ class PriorityOut(BaseModel):
     name: str
     level: int
 
+
+# ---------- Usuarios y técnicos ----------
 
 Role = Literal["user", "technician", "admin"]
 Level = Literal["N1", "N2", "N3"]
@@ -113,6 +121,8 @@ class TechnicianOut(BaseModel):
     is_active: bool
 
 
+# ---------- Equipos ----------
+
 class ComputerCreate(BaseModel):
     hostname: str = Field(min_length=2, max_length=100)
     serial_number: str | None = Field(default=None, max_length=100)
@@ -147,6 +157,11 @@ class ComputerOut(BaseModel):
     created_at: datetime
 
 
+# ---------- Tickets ----------
+
+TicketStatus = Literal["Abierto", "En progreso", "Pendiente", "Resuelto", "Cerrado"]
+
+
 class TicketCreate(BaseModel):
     title: str = Field(min_length=3, max_length=200)
     description: str = Field(min_length=5)
@@ -179,14 +194,46 @@ class TicketOut(BaseModel):
     technician_name: str | None
 
 
-TicketStatus = Literal["Abierto", "En progreso", "Pendiente", "Resuelto", "Cerrado"]
-
-
 class TicketAssign(BaseModel):
     technician_id: int
+    changed_by: int  # provisional hasta la Fase 5
 
 
 class TicketStatusChange(BaseModel):
     status: TicketStatus
+    changed_by: int  # provisional hasta la Fase 5
     diagnosis: str | None = Field(default=None, min_length=3)
     solution: str | None = Field(default=None, min_length=3)
+
+
+class TicketResolutionUpdate(BaseModel):
+    changed_by: int  # provisional hasta la Fase 5
+    diagnosis: str | None = Field(default=None, min_length=3)
+    solution: str | None = Field(default=None, min_length=3)
+
+
+# ---------- Comentarios e historial ----------
+
+class CommentCreate(BaseModel):
+    author_id: int  # provisional hasta la Fase 5 (autenticación)
+    comment: str = Field(min_length=2)
+
+
+class CommentOut(BaseModel):
+    id: int
+    ticket_id: int
+    user_id: int
+    author_name: str
+    comment: str
+    created_at: datetime
+
+
+class HistoryOut(BaseModel):
+    id: int
+    ticket_id: int
+    changed_by: int
+    user_name: str
+    field_name: str
+    old_value: str | None
+    new_value: str | None
+    changed_at: datetime
