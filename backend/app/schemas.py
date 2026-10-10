@@ -177,3 +177,35 @@ class TicketOut(BaseModel):
     category_name: str
     creator_name: str
     technician_name: str | None
+
+
+class CommentCreate(BaseModel):
+    author_id: int  # provisional hasta la Fase 5 (autenticación)
+    comment: str = Field(min_length=2)
+
+
+class CommentOut(BaseModel):
+    id: int
+    ticket_id: int
+    user_id: int
+    author_name: str
+    comment: str
+    created_at: datetime
+
+
+class TicketResolutionUpdate(BaseModel):
+    diagnosis: str | None = Field(default=None, min_length=3)
+    solution: str | None = Field(default=None, min_length=3)
+
+
+TicketStatus = Literal["Abierto", "En progreso", "Pendiente", "Resuelto", "Cerrado"]
+
+
+class TicketAssign(BaseModel):
+    technician_id: int
+
+
+class TicketStatusChange(BaseModel):
+    status: TicketStatus
+    diagnosis: str | None = Field(default=None, min_length=3)
+    solution: str | None = Field(default=None, min_length=3)

@@ -3,8 +3,16 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
 from app.database import get_db
-from app.models import Category, Computer, Priority, Technician, Ticket, User
-from app.schemas import TicketCreate, TicketOut
+from app.models import Category, Computer, Priority, Technician, Ticket, TicketComment, User
+from app.schemas import (
+    CommentCreate,
+    CommentOut,
+    TicketAssign,
+    TicketCreate,
+    TicketOut,
+    TicketResolutionUpdate,
+    TicketStatusChange,
+)
 
 router = APIRouter(prefix="/tickets", tags=["Tickets"])
 
@@ -35,6 +43,17 @@ def get_or_404(db: Session, ticket_id: int) -> Ticket:
     if ticket is None:
         raise HTTPException(status_code=404, detail="Ticket no encontrado")
     return ticket
+
+
+def comment_to_out(comment: TicketComment) -> CommentOut:
+    return CommentOut(
+        id=comment.id,
+        ticket_id=comment.ticket_id,
+        user_id=comment.user_id,
+        author_name=comment.author.full_name,
+        comment=comment.comment,
+        created_at=comment.created_at,
+    )
 
 
 def check_references(db: Session, data: TicketCreate) -> None:
@@ -71,3 +90,50 @@ def create_ticket(data: TicketCreate, db: Session = Depends(get_db)):
     db.add(ticket)
     db.commit()
     return to_out(get_or_404(db, ticket.id))
+
+
+@router.patch("/{ticket_id}/resolution", response_model=TicketOut)
+def update_resolution(ticket_id: int, data: TicketResolutionUpdate, db: Session = Depends(get_db)):
+    ticket = get_or_404(db, ticket_id)
+    if ticket.status == "Cerrado":
+        raise HTTPException(status_code=409, detail="No se puede modificar un ticket cerrado")
+    changes = data.model_dump(exclude_unset=True)
+    if not changes:
+        raise HTTPException(status_code=422, detail="Indica al menos diagnosis o solution")
+    for field, value in changes.items():
+        setattr(ticket, field, value)
+    db.commit()
+    return to_out(get_or_404(db, ticket_id))
+
+
+@router.get("/{ticket_id}/comments", response_model=list[CommentOut])
+def list_comments(ticket_id: int, db: Session = Depends(get_db)):
+    get_or_404(db, ticket_id)
+    comments = db.scalars(
+        select(TicketComment)
+        .where(TicketComment.ticket_id == ticket_id)
+        .options(selectinload(TicketComment.author))
+        .order_by(TicketComment.created_at, TicketComment.id)
+    ).all()
+    return [comment_to_out(c) for c in comments]
+
+
+@router.post(
+    "/{ticket_id}/comments",
+    response_model=CommentOut,
+    status_code=status.HTTP_201_CREATED,
+)
+def add_comment(ticket_id: int, data: CommentCreate, db: Session = Depends(get_db)):
+    ticket = get_or_404(db, ticket_id)
+    if ticket.status == "Cerrado":
+        raise HTTPException(status_code=409, detail="No se puede comentar un ticket cerrado")
+    author = db.get(User, data.author_id)
+    if author is None:
+        raise HTTPException(status_code=422, detail="El autor indicado no existe")
+    if not author.is_active:
+        raise HTTPException(status_code=422, detail="El autor indicado está desactivado")
+    comment = TicketComment(ticket_id=ticket_id, user_id=author.id, comment=data.comment)
+    db.add(comment)
+    db.commit()
+    db.refresh(comment)
+    return comment_to_out(comment)

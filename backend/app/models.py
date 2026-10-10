@@ -94,3 +94,13 @@ class Ticket(Base):
     computer: Mapped["Computer | None"] = relationship()
 
 
+class TicketComment(Base):
+    __tablename__ = "ticket_comments"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    ticket_id: Mapped[int] = mapped_column(ForeignKey("tickets.id"))
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    comment: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    author: Mapped["User"] = relationship()
