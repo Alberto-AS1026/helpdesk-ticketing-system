@@ -92,12 +92,12 @@ class UserOut(BaseModel):
 
     id: int
     full_name: str
-    email: EmailStr
+    email: str
     role: str
     department_id: int | None
     is_active: bool
     created_at: datetime
-
+ 
 
 class TechnicianCreate(BaseModel):
     user_id: int
@@ -237,3 +237,10 @@ class HistoryOut(BaseModel):
     old_value: str | None
     new_value: str | None
     changed_at: datetime
+
+
+# ---------- Autenticación ----------
+
+class TokenOut(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
