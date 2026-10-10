@@ -24,3 +24,12 @@ versionado semántico (https://semver.org/).
 - CRUD de departamentos, categorías, prioridades, usuarios, técnicos y equipos.
 - Hash de contraseñas con bcrypt; las respuestas nunca incluyen `password_hash`.
 - Validación de datos con Pydantic (códigos 404, 409 y 422).
+
+## [0.2.0] - 2026-10-10
+
+### Added
+- Tickets: creación, consulta y listado con nombres de prioridad, categoría, creador y técnico.
+- Asignación de técnicos y máquina de estados con reglas de negocio.
+- Registro de diagnóstico y solución; cálculo de `resolved_at` y `resolution_minutes`.
+- Comentarios por ticket (no editables, orden cronológico).
+- Historial automático de cambios (auditoría) en la misma transacción.
