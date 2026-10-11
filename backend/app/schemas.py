@@ -97,7 +97,7 @@ class UserOut(BaseModel):
     department_id: int | None
     is_active: bool
     created_at: datetime
- 
+
 
 class TechnicianCreate(BaseModel):
     user_id: int
@@ -167,7 +167,6 @@ class TicketCreate(BaseModel):
     description: str = Field(min_length=5)
     priority_id: int
     category_id: int
-    created_by: int  # provisional hasta la Fase 5 (autenticación)
     computer_id: int | None = None
 
 
@@ -196,18 +195,15 @@ class TicketOut(BaseModel):
 
 class TicketAssign(BaseModel):
     technician_id: int
-    changed_by: int  # provisional hasta la Fase 5
 
 
 class TicketStatusChange(BaseModel):
     status: TicketStatus
-    changed_by: int  # provisional hasta la Fase 5
     diagnosis: str | None = Field(default=None, min_length=3)
     solution: str | None = Field(default=None, min_length=3)
 
 
 class TicketResolutionUpdate(BaseModel):
-    changed_by: int  # provisional hasta la Fase 5
     diagnosis: str | None = Field(default=None, min_length=3)
     solution: str | None = Field(default=None, min_length=3)
 
@@ -215,7 +211,6 @@ class TicketResolutionUpdate(BaseModel):
 # ---------- Comentarios e historial ----------
 
 class CommentCreate(BaseModel):
-    author_id: int  # provisional hasta la Fase 5 (autenticación)
     comment: str = Field(min_length=2)
 
 

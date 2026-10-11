@@ -5,6 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
 from app.database import get_db
+from app.dependencies import STAFF, get_current_user, require_roles
 from app.models import (
     Category,
     Computer,
@@ -67,6 +68,14 @@ def get_or_404(db: Session, ticket_id: int) -> Ticket:
     return ticket
 
 
+def get_visible(db: Session, ticket_id: int, user: User) -> Ticket:
+    """Un usuario normal solo ve sus tickets; si no son suyos, responde 404."""
+    ticket = get_or_404(db, ticket_id)
+    if user.role == "user" and ticket.created_by != user.id:
+        raise HTTPException(status_code=404, detail="Ticket no encontrado")
+    return ticket
+
+
 def comment_to_out(comment: TicketComment) -> CommentOut:
     return CommentOut(
         id=comment.id,
@@ -91,16 +100,6 @@ def history_to_out(entry: TicketHistory) -> HistoryOut:
     )
 
 
-def check_actor(db: Session, user_id: int) -> User:
-    """Quien hace el cambio debe existir y estar activo."""
-    actor = db.get(User, user_id)
-    if actor is None:
-        raise HTTPException(status_code=422, detail="El usuario que realiza el cambio no existe")
-    if not actor.is_active:
-        raise HTTPException(status_code=422, detail="El usuario que realiza el cambio está desactivado")
-    return actor
-
-
 def log_change(db: Session, ticket_id: int, user_id: int, field: str, old, new) -> None:
     """Añade una entrada al historial si el valor ha cambiado (se guarda con el commit)."""
     old_s = None if old is None else str(old)
@@ -118,11 +117,6 @@ def check_references(db: Session, data: TicketCreate) -> None:
         raise HTTPException(status_code=422, detail="La prioridad indicada no existe")
     if db.get(Category, data.category_id) is None:
         raise HTTPException(status_code=422, detail="La categoría indicada no existe")
-    creator = db.get(User, data.created_by)
-    if creator is None:
-        raise HTTPException(status_code=422, detail="El usuario creador no existe")
-    if not creator.is_active:
-        raise HTTPException(status_code=422, detail="El usuario creador está desactivado")
     if data.computer_id is not None and db.get(Computer, data.computer_id) is None:
         raise HTTPException(status_code=422, detail="El equipo indicado no existe")
 
@@ -130,31 +124,44 @@ def check_references(db: Session, data: TicketCreate) -> None:
 # ---------- Tickets ----------
 
 @router.get("", response_model=list[TicketOut])
-def list_tickets(db: Session = Depends(get_db)):
-    tickets = db.scalars(
-        select(Ticket).options(*LOAD_OPTIONS).order_by(Ticket.created_at.desc())
-    ).all()
-    return [to_out(t) for t in tickets]
+def list_tickets(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    query = select(Ticket).options(*LOAD_OPTIONS).order_by(Ticket.created_at.desc())
+    if user.role == "user":
+        query = query.where(Ticket.created_by == user.id)
+    return [to_out(t) for t in db.scalars(query).all()]
 
 
 @router.get("/{ticket_id}", response_model=TicketOut)
-def get_ticket(ticket_id: int, db: Session = Depends(get_db)):
-    return to_out(get_or_404(db, ticket_id))
+def get_ticket(
+    ticket_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    return to_out(get_visible(db, ticket_id, user))
 
 
 @router.post("", response_model=TicketOut, status_code=status.HTTP_201_CREATED)
-def create_ticket(data: TicketCreate, db: Session = Depends(get_db)):
+def create_ticket(
+    data: TicketCreate,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
     check_references(db, data)
-    ticket = Ticket(**data.model_dump(), status="Abierto")
+    ticket = Ticket(**data.model_dump(), created_by=user.id, status="Abierto")
     db.add(ticket)
     db.flush()  # asigna el id sin cerrar la transacción
-    log_change(db, ticket.id, data.created_by, "creado", None, "Abierto")
+    log_change(db, ticket.id, user.id, "creado", None, "Abierto")
     db.commit()
     return to_out(get_or_404(db, ticket.id))
 
 
 @router.patch("/{ticket_id}/assign", response_model=TicketOut)
-def assign_ticket(ticket_id: int, data: TicketAssign, db: Session = Depends(get_db)):
+def assign_ticket(
+    ticket_id: int,
+    data: TicketAssign,
+    db: Session = Depends(get_db),
+    actor: User = Depends(require_roles(*STAFF)),
+):
     ticket = get_or_404(db, ticket_id)
     if ticket.status in ("Resuelto", "Cerrado"):
         raise HTTPException(
@@ -170,22 +177,24 @@ def assign_ticket(ticket_id: int, data: TicketAssign, db: Session = Depends(get_
         raise HTTPException(status_code=422, detail="El técnico indicado no existe")
     if not technician.is_active or not technician.user.is_active:
         raise HTTPException(status_code=422, detail="El técnico indicado está inactivo")
-    check_actor(db, data.changed_by)
-    log_change(db, ticket.id, data.changed_by, "assigned_to", ticket.assigned_to, technician.id)
+    log_change(db, ticket.id, actor.id, "assigned_to", ticket.assigned_to, technician.id)
     ticket.assigned_to = technician.id
     db.commit()
     return to_out(get_or_404(db, ticket_id))
 
 
 @router.patch("/{ticket_id}/status", response_model=TicketOut)
-def change_status(ticket_id: int, data: TicketStatusChange, db: Session = Depends(get_db)):
+def change_status(
+    ticket_id: int,
+    data: TicketStatusChange,
+    db: Session = Depends(get_db),
+    actor: User = Depends(require_roles(*STAFF)),
+):
     ticket = get_or_404(db, ticket_id)
     current, new = ticket.status, data.status
 
     if new == current:
         raise HTTPException(status_code=409, detail=f"El ticket ya está en estado '{current}'")
-
-    check_actor(db, data.changed_by)
 
     allowed = ALLOWED_TRANSITIONS[current]
     if new not in allowed:
@@ -208,10 +217,10 @@ def change_status(ticket_id: int, data: TicketStatusChange, db: Session = Depend
             raise HTTPException(status_code=422, detail="Para resolver hay que registrar la solución")
 
     if data.diagnosis is not None:
-        log_change(db, ticket.id, data.changed_by, "diagnosis", ticket.diagnosis, data.diagnosis)
+        log_change(db, ticket.id, actor.id, "diagnosis", ticket.diagnosis, data.diagnosis)
         ticket.diagnosis = data.diagnosis
     if data.solution is not None:
-        log_change(db, ticket.id, data.changed_by, "solution", ticket.solution, data.solution)
+        log_change(db, ticket.id, actor.id, "solution", ticket.solution, data.solution)
         ticket.solution = data.solution
 
     if new == "Resuelto":
@@ -223,23 +232,27 @@ def change_status(ticket_id: int, data: TicketStatusChange, db: Session = Depend
         ticket.resolved_at = None
         ticket.resolution_minutes = None
 
-    log_change(db, ticket.id, data.changed_by, "status", current, new)
+    log_change(db, ticket.id, actor.id, "status", current, new)
     ticket.status = new
     db.commit()
     return to_out(get_or_404(db, ticket_id))
 
 
 @router.patch("/{ticket_id}/resolution", response_model=TicketOut)
-def update_resolution(ticket_id: int, data: TicketResolutionUpdate, db: Session = Depends(get_db)):
+def update_resolution(
+    ticket_id: int,
+    data: TicketResolutionUpdate,
+    db: Session = Depends(get_db),
+    actor: User = Depends(require_roles(*STAFF)),
+):
     ticket = get_or_404(db, ticket_id)
     if ticket.status == "Cerrado":
         raise HTTPException(status_code=409, detail="No se puede modificar un ticket cerrado")
-    check_actor(db, data.changed_by)
-    changes = data.model_dump(exclude_unset=True, exclude={"changed_by"})
+    changes = data.model_dump(exclude_unset=True)
     if not changes:
         raise HTTPException(status_code=422, detail="Indica al menos diagnosis o solution")
     for field, value in changes.items():
-        log_change(db, ticket.id, data.changed_by, field, getattr(ticket, field), value)
+        log_change(db, ticket.id, actor.id, field, getattr(ticket, field), value)
         setattr(ticket, field, value)
     db.commit()
     return to_out(get_or_404(db, ticket_id))
@@ -248,8 +261,12 @@ def update_resolution(ticket_id: int, data: TicketResolutionUpdate, db: Session 
 # ---------- Comentarios ----------
 
 @router.get("/{ticket_id}/comments", response_model=list[CommentOut])
-def list_comments(ticket_id: int, db: Session = Depends(get_db)):
-    get_or_404(db, ticket_id)
+def list_comments(
+    ticket_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    get_visible(db, ticket_id, user)
     comments = db.scalars(
         select(TicketComment)
         .where(TicketComment.ticket_id == ticket_id)
@@ -264,16 +281,16 @@ def list_comments(ticket_id: int, db: Session = Depends(get_db)):
     response_model=CommentOut,
     status_code=status.HTTP_201_CREATED,
 )
-def add_comment(ticket_id: int, data: CommentCreate, db: Session = Depends(get_db)):
-    ticket = get_or_404(db, ticket_id)
+def add_comment(
+    ticket_id: int,
+    data: CommentCreate,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    ticket = get_visible(db, ticket_id, user)
     if ticket.status == "Cerrado":
         raise HTTPException(status_code=409, detail="No se puede comentar un ticket cerrado")
-    author = db.get(User, data.author_id)
-    if author is None:
-        raise HTTPException(status_code=422, detail="El autor indicado no existe")
-    if not author.is_active:
-        raise HTTPException(status_code=422, detail="El autor indicado está desactivado")
-    comment = TicketComment(ticket_id=ticket_id, user_id=author.id, comment=data.comment)
+    comment = TicketComment(ticket_id=ticket_id, user_id=user.id, comment=data.comment)
     db.add(comment)
     db.commit()
     db.refresh(comment)
@@ -283,8 +300,12 @@ def add_comment(ticket_id: int, data: CommentCreate, db: Session = Depends(get_d
 # ---------- Historial ----------
 
 @router.get("/{ticket_id}/history", response_model=list[HistoryOut])
-def get_history(ticket_id: int, db: Session = Depends(get_db)):
-    get_or_404(db, ticket_id)
+def get_history(
+    ticket_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    get_visible(db, ticket_id, user)
     entries = db.scalars(
         select(TicketHistory)
         .where(TicketHistory.ticket_id == ticket_id)
