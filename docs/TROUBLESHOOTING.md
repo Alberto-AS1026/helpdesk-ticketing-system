@@ -683,3 +683,21 @@ grep TEST_DATABASE_URL ~/helpdesk/.env | sed 's/:[^:@]*@/:***@/'
 **Solución:** añadir `TEST_DATABASE_URL` apuntando a `helpdesk_test` y volver a ejecutar pytest.
 
 **Prevención:** mantener la variable en `.env.example`. No quitar la comprobación de `_test`: es el seguro contra borrar datos reales.
+
+## 33. Un test falla con `assert 201 == 422`
+
+**Síntoma:** `test_crear_ticket_con_datos_invalidos[cambio1]` falla: se esperaba 422 y la API devolvió 201.
+
+**Hipótesis:** (1) la validación de la API no funciona; (2) el dato de prueba no es realmente inválido.
+
+**Comprobaciones:**
+```bash
+grep -n "description" backend/app/schemas.py
+python -m pytest -q tests/test_tickets_rules.py -k datos_invalidos
+```
+
+**Diagnóstico:** el esquema exige `min_length=5` y el test enviaba "corta", que tiene exactamente 5 caracteres. La API era correcta; el dato de prueba, no.
+
+**Solución:** usar un valor inválido de verdad (`"abcd"`, 4 caracteres) y añadir un test del valor límite (`"abcde"` es válido).
+
+**Prevención:** ante un test fallido, comparar el mensaje con la regla real antes de tocar el código de la app. Probar siempre los valores límite.
