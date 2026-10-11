@@ -66,3 +66,18 @@ versionado semántico (https://semver.org/).
 
 ### Changed
 - `GET /tickets` devuelve `{total, limit, offset, items}` en lugar de una lista (cambio incompatible).
+
+## [0.5.0] - 2026-10-12
+
+### Added
+- Frontend en HTML, CSS y JavaScript sin frameworks, servido por Nginx.
+- Login, listado de tickets con búsqueda, filtros, ordenación y paginación.
+- Detalle de ticket con comentarios, historial y acciones del personal técnico.
+- Formulario de nuevo ticket.
+- Dashboard con Chart.js (KPIs y cinco gráficos) alimentado por `/stats`.
+- Nginx como proxy inverso (`/api`) con `Content-Security-Policy` estricta.
+
+### Security
+- Renderizado con `textContent` para evitar XSS; sin `unsafe-inline` en scripts.
+- Chart.js servido localmente; sin dependencias de CDN.
+- IP real del cliente tras Nginx para el límite de intentos de login.
