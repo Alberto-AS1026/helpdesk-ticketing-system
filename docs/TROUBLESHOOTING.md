@@ -598,3 +598,22 @@ uvicorn app.main:app --host 127.0.0.1 --port 8000 --proxy-headers --forwarded-al
 y en `auth.py`: `ip = (request.client.host if request.client else None) or "desconocida"`. Resultado: `401` ×5 y `429` al sexto desde la misma IP, y otro usuario sigue entrando (`200`).
 
 **Prevención:** confiar en `X-Forwarded-For` solo desde el proxy (nunca `*`), porque si no un atacante falsearía su IP y evitaría el bloqueo. Con `--host 127.0.0.1` la API solo es accesible a través de Nginx.
+
+## 29. Un script SQL del repositorio no existe (`No such file or directory`)
+
+**Síntoma:** al cargar `database/01_schema.sql` en la base de test: `No such file or directory`, seguido de `relation "tickets" does not exist` al cargar los índices.
+
+**Hipótesis:** (1) el archivo está en una rama no integrada; (2) tiene otro nombre; (3) se borró.
+
+**Comprobaciones:**
+```bash
+ls database
+git ls-tree -r --name-only main | grep database
+git log --oneline --all -- database/01_schema.sql | head
+```
+
+**Diagnóstico:** el esquema nunca llegó a `main` y la rama que lo contenía se borró en la limpieza. El commit seguía en el historial.
+
+**Solución:** `git checkout <commit> -- database/01_schema.sql`, commitearlo en una rama y mergearlo. Después recrear la base de test (`DROP DATABASE` / `CREATE DATABASE`) y cargar el esquema antes que los índices.
+
+**Prevención:** antes de borrar una rama, `git branch --merged main` debe incluirla. Los scripts SQL se cargan en orden (`01_`, `02_`...). Un `git log --all -- archivo` encuentra archivos de ramas ya borradas.

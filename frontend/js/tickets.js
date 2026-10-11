@@ -51,7 +51,13 @@ function renderRows(items) {
   for (const t of items) {
     const tr = document.createElement("tr");
     tr.appendChild(cell(t.id));
-    tr.appendChild(cell(t.title));
+
+    const titleTd = document.createElement("td");
+    const link = el("a", t.title, "link");
+    link.href = "/ticket.html?id=" + Number(t.id);
+    titleTd.appendChild(link);
+    tr.appendChild(titleTd);
+
     tr.appendChild(badgeCell(t.status));
     tr.appendChild(cell(t.priority_name));
     tr.appendChild(cell(t.category_name));
@@ -116,8 +122,8 @@ els.q.addEventListener("input", () => {
     if (len === 0 || len >= 3) resetAndLoad();
   }, 400);
 });
-for (const el of [els.status, els.priority, els.category, els.sort, els.unassigned]) {
-  el.addEventListener("change", resetAndLoad);
+for (const el_ of [els.status, els.priority, els.category, els.sort, els.unassigned]) {
+  el_.addEventListener("change", resetAndLoad);
 }
 els.prev.addEventListener("click", () => {
   state.offset = Math.max(0, state.offset - PAGE_SIZE);
@@ -133,6 +139,7 @@ async function init() {
     const me = await apiFetch("/auth/me");
     document.getElementById("user-name").textContent = me.full_name + " (" + me.role + ")";
     if (me.role !== "user") els.unassignedRow.hidden = false;
+    if (me.role !== "user") document.getElementById("dash-link").hidden = false;
 
     const [priorities, categories] = await Promise.all([
       apiFetch("/priorities"),
