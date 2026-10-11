@@ -13,6 +13,7 @@ from app.routers import (
     computers,
     departments,
     priorities,
+    stats,
     technicians,
     tickets,
     users,
@@ -20,7 +21,7 @@ from app.routers import (
 
 setup_logging()
 
-app = FastAPI(title="Help Desk API", version="0.10.0")
+app = FastAPI(title="Help Desk API", version="0.11.0")
 
 # CORS: solo los orígenes de la lista blanca
 app.add_middleware(
@@ -63,6 +64,9 @@ app.include_router(
 )
 app.include_router(
     computers.router, dependencies=[Depends(protect(read=ALL_ROLES, write=STAFF))]
+)
+app.include_router(
+    stats.router, dependencies=[Depends(protect(read=STAFF, write=ADMIN_ONLY))]
 )
 app.include_router(
     tickets.router, dependencies=[Depends(protect(read=ALL_ROLES, write=ALL_ROLES))]
