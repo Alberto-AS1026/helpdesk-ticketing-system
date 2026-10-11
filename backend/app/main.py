@@ -1,9 +1,12 @@
 from fastapi import Depends, FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from app.config import CORS_ORIGINS
 from app.database import get_db
 from app.dependencies import ADMIN_ONLY, ALL_ROLES, STAFF, protect
+from app.logging_config import setup_logging
 from app.routers import (
     auth,
     categories,
@@ -15,7 +18,29 @@ from app.routers import (
     users,
 )
 
-app = FastAPI(title="Help Desk API", version="0.9.0")
+setup_logging()
+
+app = FastAPI(title="Help Desk API", version="0.10.0")
+
+# CORS: solo los orígenes de la lista blanca
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=CORS_ORIGINS,
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "PATCH", "DELETE"],
+    allow_headers=["Authorization", "Content-Type"],
+)
+
+
+@app.middleware("http")
+async def security_headers(request, call_next):
+    """Añade cabeceras de seguridad a todas las respuestas."""
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "no-referrer"
+    return response
+
 
 # Público: login
 app.include_router(auth.router)
