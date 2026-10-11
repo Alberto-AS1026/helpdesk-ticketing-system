@@ -136,4 +136,16 @@ a.link:hover { text-decoration: underline; }
 .header-row { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
 .ok { color: #065f46; margin-top: 1rem; font-size: 0.9rem; min-height: 1.2em; }
 
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
+.kpi { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; }
+.kpi .value { font-size: 1.8rem; font-weight: 700; }
+.kpi .label { color: var(--muted); font-size: 0.85rem; }
+
+.charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 1rem; }
+.chart-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; }
+.chart-card h2 { margin: 0 0 0.5rem; font-size: 1rem; }
+.chart-box { position: relative; height: 260px; }
+.chart-card.wide { grid-column: 1 / -1; }
+
+.nav-links { display: flex; gap: 1rem; align-items: center; }
 

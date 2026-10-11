@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Help Desk - Dashboard</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav class="topbar">
+    <span class="nav-links">
+      <a class="link" href="/"><strong>Help Desk</strong></a>
+      <a class="link" href="/">Tickets</a>
+      <a class="link" href="/dashboard.html">Dashboard</a>
+    </span>
+    <span><span id="user-name" class="muted"></span> <button id="logout-btn" type="button">Salir</button></span>
+  </nav>
+
+  <main class="container">
+    <div class="header-row">
+      <h1>Dashboard</h1>
+      <div>
+        <label for="days">Periodo</label>
+        <select id="days">
+          <option value="7">Últimos 7 días</option>
+          <option value="30" selected>Últimos 30 días</option>
+          <option value="90">Últimos 90 días</option>
+          <option value="180">Últimos 180 días</option>
+        </select>
+      </div>
+    </div>
+
+    <p id="message" class="error" role="alert"></p>
+
+    <div class="kpis" id="kpis"></div>
+
+    <div class="charts">
+      <section class="chart-card">
+        <h2>Tickets por estado</h2>
+        <div class="chart-box"><canvas id="c-status"></canvas></div>
+      </section>
+      <section class="chart-card">
+        <h2>Tickets por prioridad</h2>
+        <div class="chart-box"><canvas id="c-priority"></canvas></div>
+      </section>
+      <section class="chart-card">
+        <h2>Tickets por categoría</h2>
+        <div class="chart-box"><canvas id="c-category"></canvas></div>
+      </section>
+      <section class="chart-card">
+        <h2>Carga por técnico</h2>
+        <div class="chart-box"><canvas id="c-tech"></canvas></div>
+      </section>
+      <section class="chart-card wide">
+        <h2>Tickets creados por día</h2>
+        <div class="chart-box"><canvas id="c-day"></canvas></div>
+      </section>
+    </div>
+  </main>
+
+  <script src="/js/vendor/chart.umd.min.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/dashboard.js"></script>
+</body>
+</html>
