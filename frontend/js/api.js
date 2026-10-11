@@ -66,3 +66,30 @@ async function apiFetch(path, options = {}) {
   }
   return data;
 }
+
+
+/** Crea un elemento con texto seguro (textContent). */
+function el(tag, text, className) {
+  const node = document.createElement(tag);
+  if (text !== undefined && text !== null) node.textContent = text;
+  if (className) node.className = className;
+  return node;
+}
+
+function statusBadge(status) {
+  return el("span", status, "badge " + status.toLowerCase().replace(/ /g, "-"));
+}
+
+function formatDate(iso) {
+  return new Date(iso).toLocaleString("es-ES");
+}
+
+/** Pinta el nombre del usuario en la barra superior y devuelve sus datos. */
+async function loadCurrentUser() {
+  document.getElementById("logout-btn").addEventListener("click", logout);
+  const me = await apiFetch("/auth/me");
+  document.getElementById("user-name").textContent = me.full_name + " (" + me.role + ")";
+  return me;
+}
+
+

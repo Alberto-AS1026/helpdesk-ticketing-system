@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Help Desk - Nuevo ticket</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav class="topbar">
+    <a class="link" href="/"><strong>Help Desk</strong></a>
+    <span><span id="user-name" class="muted"></span> <button id="logout-btn" type="button">Salir</button></span>
+  </nav>
+
+  <main class="container">
+    <p><a class="link" href="/">&larr; Volver al listado</a></p>
+    <section class="card">
+      <h1>Nuevo ticket</h1>
+      <form id="new-form" novalidate>
+        <label for="title">Título</label>
+        <input id="title" maxlength="200">
+
+        <label for="description">Descripción</label>
+        <textarea id="description" maxlength="2000"></textarea>
+
+        <label for="priority">Prioridad</label>
+        <select id="priority"></select>
+
+        <label for="category">Categoría</label>
+        <select id="category"></select>
+
+        <button type="submit">Crear ticket</button>
+        <p class="error" id="error" role="alert"></p>
+      </form>
+    </section>
+  </main>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/new.js"></script>
+</body>
+</html>

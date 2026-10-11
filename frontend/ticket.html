@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Help Desk - Ticket</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav class="topbar">
+    <a class="link" href="/"><strong>Help Desk</strong></a>
+    <span><span id="user-name" class="muted"></span> <button id="logout-btn" type="button">Salir</button></span>
+  </nav>
+
+  <main class="container">
+    <p><a class="link" href="/">&larr; Volver al listado</a></p>
+    <p id="message" class="error" role="alert"></p>
+
+    <div class="grid-2">
+      <div>
+        <section class="card" id="detail-card" hidden>
+          <h1 id="t-title"></h1>
+          <dl class="details" id="t-details"></dl>
+        </section>
+
+        <section class="card" id="comments-card" hidden>
+          <h2>Comentarios</h2>
+          <ul class="thread" id="comments"></ul>
+          <form id="comment-form" novalidate>
+            <label for="comment-text">Añadir comentario</label>
+            <textarea id="comment-text" maxlength="2000"></textarea>
+            <button type="submit">Comentar</button>
+            <p class="error" id="comment-error" role="alert"></p>
+          </form>
+        </section>
+
+        <section class="card" id="history-card" hidden>
+          <h2>Historial</h2>
+          <ul class="thread" id="history"></ul>
+        </section>
+      </div>
+
+      <aside id="staff-panel" hidden>
+        <section class="card">
+          <h2>Asignar técnico</h2>
+          <form id="assign-form" novalidate>
+            <select id="technician"></select>
+            <button type="submit">Asignar</button>
+          </form>
+        </section>
+
+        <section class="card">
+          <h2>Cambiar estado</h2>
+          <form id="status-form" novalidate>
+            <label for="new-status">Nuevo estado</label>
+            <select id="new-status"></select>
+            <label for="diagnosis">Diagnóstico</label>
+            <textarea id="diagnosis" maxlength="2000"></textarea>
+            <label for="solution">Solución</label>
+            <textarea id="solution" maxlength="2000"></textarea>
+            <button type="submit">Guardar</button>
+          </form>
+          <p class="muted">Para resolver hacen falta diagnóstico y solución.</p>
+        </section>
+
+        <p class="error" id="action-error" role="alert"></p>
+        <p class="ok" id="action-ok" role="status"></p>
+      </aside>
+    </div>
+  </main>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/ticket.js"></script>
+</body>
+</html>

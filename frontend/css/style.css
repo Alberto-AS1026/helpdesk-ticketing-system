@@ -103,3 +103,37 @@ tbody tr:hover { background: #f8fafc; }
 .checkbox-row { display: flex; align-items: center; gap: 0.5rem; margin-top: 1.4rem; }
 .checkbox-row input { width: auto; }
 .checkbox-row label { margin: 0; }
+
+.grid-2 { display: grid; grid-template-columns: 2fr 1fr; gap: 1rem; align-items: start; }
+@media (max-width: 800px) { .grid-2 { grid-template-columns: 1fr; } }
+
+.card + .card { margin-top: 1rem; }
+.card h2 { margin-top: 0; font-size: 1.1rem; }
+
+dl.details { display: grid; grid-template-columns: 8rem 1fr; gap: 0.4rem 1rem; margin: 0; }
+dl.details dt { color: var(--muted); font-size: 0.9rem; }
+dl.details dd { margin: 0; white-space: pre-wrap; }
+
+.thread { list-style: none; margin: 0; padding: 0; }
+.thread li { padding: 0.6rem 0; border-bottom: 1px solid var(--border); }
+.thread li:last-child { border-bottom: 0; }
+.thread .meta { color: var(--muted); font-size: 0.8rem; }
+.thread .text { white-space: pre-wrap; }
+
+textarea {
+  width: 100%; padding: 0.6rem 0.75rem; border: 1px solid var(--border);
+  border-radius: 6px; font-size: 1rem; font-family: inherit; min-height: 5rem; resize: vertical;
+}
+textarea:focus { outline: 2px solid var(--primary); outline-offset: 1px; }
+
+a.link { color: var(--primary); text-decoration: none; }
+a.link:hover { text-decoration: underline; }
+.btn-link {
+  display: inline-block; padding: 0.5rem 1rem; background: var(--primary); color: #fff;
+  border-radius: 6px; text-decoration: none; font-weight: 600;
+}
+.btn-link:hover { background: var(--primary-dark); }
+.header-row { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.ok { color: #065f46; margin-top: 1rem; font-size: 0.9rem; min-height: 1.2em; }
+
+
