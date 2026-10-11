@@ -54,3 +54,15 @@ versionado semántico (https://semver.org/).
 - Cerrado el agujero que permitía a cualquiera crear usuarios `admin`.
 - `UserOut.email` pasa a `str` en la respuesta (la validación estricta se
   mantiene al crear y modificar usuarios).
+
+## [0.4.0] - 2026-10-11
+
+### Added
+- Búsqueda de tickets por texto, con filtros por estado, prioridad, categoría, técnico y fechas.
+- Ordenación (lista blanca) y paginación con total.
+- Índices `pg_trgm` (GIN) y compuesto para la bandeja del técnico.
+- Datos de volumen (50.000 tickets) y mediciones con `EXPLAIN ANALYZE`.
+- Endpoint `/stats` (técnico y admin): resumen, tickets por estado, prioridad y categoría, carga por técnico y tickets por día.
+
+### Changed
+- `GET /tickets` devuelve `{total, limit, offset, items}` en lugar de una lista (cambio incompatible).
