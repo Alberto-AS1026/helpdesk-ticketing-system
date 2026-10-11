@@ -553,3 +553,48 @@ SELECT indexrelname, idx_scan FROM pg_stat_user_indexes WHERE relname = 'tickets
 **Solución:** extensión `pg_trgm` e índices GIN con `gin_trgm_ops` sobre título y descripción (`database/04_indexes.sql`); índice compuesto `(assigned_to, status, created_at DESC)` para la bandeja del técnico. Después, `ANALYZE tickets`.
 
 **Prevención:** medir con `EXPLAIN ANALYZE` antes de crear índices y no indexar a ciegas: cada índice ralentiza las escrituras y ocupa espacio. Con términos muy frecuentes, `Seq Scan` puede ser la mejor opción. Revisar `idx_scan` para detectar índices sin uso.
+
+## 27. `tail: cannot open 'logs/helpdesk.log'`
+
+**Síntoma:** `tail: cannot open 'logs/helpdesk.log' for reading: No such file or directory`.
+
+**Hipótesis:** (1) el archivo no existe; (2) se ejecuta desde otra carpeta; (3) el log se creó en otra ruta.
+
+**Comprobaciones:**
+```bash
+pwd
+ls ~/helpdesk/backend/logs
+```
+
+**Diagnóstico:** el comando se ejecutó desde `frontend/` y la ruta `logs/` es relativa. El log vive en `backend/logs/`.
+
+**Solución:** usar la ruta absoluta: `tail -5 ~/helpdesk/backend/logs/helpdesk.log`.
+
+**Prevención:** comprobar con `pwd` dónde se está antes de usar rutas relativas. Preferir rutas absolutas en comandos de diagnóstico.
+
+## 28. El límite de login agrupa a todos los usuarios tras Nginx (IP `127.0.0.1` o `None`)
+
+**Síntoma:** al poner Nginx delante de la API, el log muestra `ip=127.0.0.1` para todos los logins, y cinco fallos de un usuario podrían bloquear a otros. Más tarde aparece `ip=None` en logins hechos desde la propia máquina.
+
+**Hipótesis:** (1) FastAPI ve la IP de Nginx y no la del cliente; (2) Nginx no reenvía la IP; (3) Uvicorn no confía en la cabecera.
+
+**Comprobaciones:**
+```bash
+tail -5 ~/helpdesk/backend/logs/helpdesk.log
+ps aux | grep "[u]vicorn"
+grep X-Forwarded-For /etc/nginx/sites-available/helpdesk
+```
+Prueba con una IP simulada:
+```bash
+for i in 1 2 3 4 5; do curl -s -o /dev/null -w "%{http_code} " -X POST http://localhost:8080/api/auth/login -H "X-Forwarded-For: 203.0.113.9" -d 'username=carlos@empresa.test&password=mala'; done; echo
+```
+
+**Diagnóstico:** tras un proxy inverso, la conexión TCP llega siempre desde Nginx (`127.0.0.1`). La IP real viaja en `X-Forwarded-For`. Uvicorn solo la usa si se arranca con `--proxy-headers` y la IP del proxy figura en `--forwarded-allow-ips`. Si el origen es la propia máquina, la IP de Nginx se descarta como de confianza y `request.client.host` puede quedar en `None`.
+
+**Solución:**
+```bash
+uvicorn app.main:app --host 127.0.0.1 --port 8000 --proxy-headers --forwarded-allow-ips 127.0.0.1 --reload
+```
+y en `auth.py`: `ip = (request.client.host if request.client else None) or "desconocida"`. Resultado: `401` ×5 y `429` al sexto desde la misma IP, y otro usuario sigue entrando (`200`).
+
+**Prevención:** confiar en `X-Forwarded-For` solo desde el proxy (nunca `*`), porque si no un atacante falsearía su IP y evitaría el bloqueo. Con `--host 127.0.0.1` la API solo es accesible a través de Nginx.

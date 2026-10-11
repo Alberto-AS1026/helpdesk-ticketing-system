@@ -27,7 +27,7 @@ def login(
     db: Session = Depends(get_db),
 ):
     """El campo 'username' del formulario es el email."""
-    ip = request.client.host if request.client else "desconocida"
+    ip = (request.client.host if request.client else None) or "desconocida"
     key = f"{ip}|{form.username.lower()}"
 
     wait = login_limiter.retry_after(key)
