@@ -617,3 +617,69 @@ git log --oneline --all -- database/01_schema.sql | head
 **Solución:** `git checkout <commit> -- database/01_schema.sql`, commitearlo en una rama y mergearlo. Después recrear la base de test (`DROP DATABASE` / `CREATE DATABASE`) y cargar el esquema antes que los índices.
 
 **Prevención:** antes de borrar una rama, `git branch --merged main` debe incluirla. Los scripts SQL se cargan en orden (`01_`, `02_`...). Un `git log --all -- archivo` encuentra archivos de ramas ya borradas.
+
+
+---
+
+# Testing
+
+## 30. Un script SQL del repositorio no existe (`No such file or directory`)
+
+**Síntoma:** al cargar `database/01_schema.sql` en la base de test: `No such file or directory`, seguido de `relation "tickets" does not exist` al cargar los índices.
+
+**Hipótesis:** (1) el archivo está en una rama no integrada; (2) tiene otro nombre; (3) se borró.
+
+**Comprobaciones:**
+```bash
+ls database
+git ls-tree -r --name-only main | grep database
+git log --oneline --all -- database/01_schema.sql | head
+```
+
+**Diagnóstico:** el esquema nunca llegó a `main` y la rama que lo contenía se borró en la limpieza. El commit seguía en el historial.
+
+**Solución:** `git checkout <commit> -- database/01_schema.sql`, commitearlo en una rama y mergearlo. Después recrear la base de test (`DROP DATABASE` / `CREATE DATABASE`) y cargar el esquema antes que los índices.
+
+**Prevención:** antes de borrar una rama, `git branch --merged main` debe incluirla. Los scripts SQL se cargan en orden (`01_`, `02_`...). `git log --all -- archivo` encuentra archivos de ramas ya borradas.
+
+---
+
+## 31. pytest: `collected 0 items` y carpeta `tests/` inexistente
+
+**Síntoma:** `python -m pytest` termina con `no tests ran` y `collected 0 items`.
+
+**Hipótesis:** (1) falta el archivo de tests; (2) el nombre no empieza por `test_`; (3) la carpeta está fuera de `testpaths`; (4) se está en otra rama.
+
+**Comprobaciones:**
+```bash
+git branch
+ls -la tests
+find ~/helpdesk -name "test_*.py" -not -path "*/.venv/*"
+python -m pytest --collect-only -q
+```
+
+**Diagnóstico:** la carpeta `tests/` no existía en la rama actual: los archivos nunca se guardaron o se perdieron al cambiar de rama sin commit. pytest solo recoge archivos `test_*.py` dentro de `testpaths`; sin ellos no da error, simplemente no hay nada que ejecutar.
+
+**Solución:** recrear `pytest.ini`, `tests/conftest.py` y `tests/test_auth.py`, verificar con `grep -c "^def test_"` y hacer commit inmediato.
+
+**Prevención:** commitear en cuanto algo funcione, antes de cambiar de rama. Usar `pytest --collect-only` para ver qué detecta pytest.
+
+---
+
+## 33. pytest se niega a arrancar: `TEST_DATABASE_URL debe apuntar a una base ..._test`
+
+**Síntoma:** `ImportError while loading conftest` con `RuntimeError: TEST_DATABASE_URL debe apuntar a una base cuyo nombre termine en '_test'`.
+
+**Hipótesis:** (1) la variable no está en `.env`; (2) apunta a la base real; (3) el nombre de la base no termina en `_test`.
+
+**Comprobaciones:**
+```bash
+grep -c TEST_DATABASE_URL ~/helpdesk/.env
+grep TEST_DATABASE_URL ~/helpdesk/.env | sed 's/:[^:@]*@/:***@/'
+```
+
+**Diagnóstico:** la variable no existía (`grep -c` devolvía 0). El `conftest.py` aborta a propósito para impedir que los tests, que hacen `TRUNCATE`, toquen la base real.
+
+**Solución:** añadir `TEST_DATABASE_URL` apuntando a `helpdesk_test` y volver a ejecutar pytest.
+
+**Prevención:** mantener la variable en `.env.example`. No quitar la comprobación de `_test`: es el seguro contra borrar datos reales.
