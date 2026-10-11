@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Help Desk</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav class="topbar">
+    <strong>Help Desk</strong>
+    <span><span id="user-name" class="muted"></span> <button id="logout-btn" type="button">Salir</button></span>
+  </nav>
+
+  <main class="container">
+    <div class="card">
+      <h1>Sesión iniciada</h1>
+      <p id="welcome"></p>
+    </div>
+  </main>
+
+  <script src="/js/api.js"></script>
+  <script>
+    "use strict";
+    requireLogin();
+    document.getElementById("logout-btn").addEventListener("click", logout);
+
+    apiFetch("/auth/me")
+      .then((me) => {
+        document.getElementById("user-name").textContent = me.full_name + " (" + me.role + ")";
+        document.getElementById("welcome").textContent = "Hola, " + me.full_name + ".";
+      })
+      .catch((err) => {
+        document.getElementById("welcome").textContent = err.message;
+      });
+  </script>
+</body>
+</html>
