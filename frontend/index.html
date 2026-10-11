@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Help Desk</title>
+  <title>Help Desk - Tickets</title>
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
@@ -13,26 +13,69 @@
   </nav>
 
   <main class="container">
-    <div class="card">
-      <h1>Sesión iniciada</h1>
-      <p id="welcome"></p>
+    <h1>Tickets</h1>
+
+    <div class="toolbar">
+      <div>
+        <label for="f-q">Buscar (mín. 3 letras)</label>
+        <input id="f-q" type="search" maxlength="100" placeholder="wifi, impresora...">
+      </div>
+      <div>
+        <label for="f-status">Estado</label>
+        <select id="f-status">
+          <option value="">Todos</option>
+          <option>Abierto</option>
+          <option>En progreso</option>
+          <option>Pendiente</option>
+          <option>Resuelto</option>
+          <option>Cerrado</option>
+        </select>
+      </div>
+      <div>
+        <label for="f-priority">Prioridad</label>
+        <select id="f-priority"><option value="">Todas</option></select>
+      </div>
+      <div>
+        <label for="f-category">Categoría</label>
+        <select id="f-category"><option value="">Todas</option></select>
+      </div>
+      <div>
+        <label for="f-sort">Ordenar por</label>
+        <select id="f-sort">
+          <option value="created_at:desc">Más recientes</option>
+          <option value="created_at:asc">Más antiguos</option>
+          <option value="priority:desc">Prioridad (alta primero)</option>
+          <option value="status:asc">Estado</option>
+        </select>
+      </div>
+      <div class="checkbox-row" id="unassigned-row" hidden>
+        <input id="f-unassigned" type="checkbox">
+        <label for="f-unassigned">Solo sin asignar</label>
+      </div>
+    </div>
+
+    <p id="message" class="error" role="alert"></p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th><th>Título</th><th>Estado</th><th>Prioridad</th>
+            <th>Categoría</th><th>Creado por</th><th>Técnico</th><th>Fecha</th>
+          </tr>
+        </thead>
+        <tbody id="tickets-body"></tbody>
+      </table>
+    </div>
+
+    <div class="pager">
+      <button id="prev-btn" type="button">Anterior</button>
+      <span id="page-info" class="muted"></span>
+      <button id="next-btn" type="button">Siguiente</button>
     </div>
   </main>
 
   <script src="/js/api.js"></script>
-  <script>
-    "use strict";
-    requireLogin();
-    document.getElementById("logout-btn").addEventListener("click", logout);
-
-    apiFetch("/auth/me")
-      .then((me) => {
-        document.getElementById("user-name").textContent = me.full_name + " (" + me.role + ")";
-        document.getElementById("welcome").textContent = "Hola, " + me.full_name + ".";
-      })
-      .catch((err) => {
-        document.getElementById("welcome").textContent = err.message;
-      });
-  </script>
+  <script src="/js/tickets.js"></script>
 </body>
 </html>
