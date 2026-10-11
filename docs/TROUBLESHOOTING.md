@@ -532,3 +532,24 @@ La cabecera `Retry-After` indica los segundos que faltan.
 **Solución:** esperar a que acabe el bloqueo (o reiniciar la API, que borra el contador en memoria, solo en laboratorio). Si es un olvido, un administrador restablece la contraseña con `PATCH /users/{id}`.
 
 **Prevención:** informar al usuario del límite. En producción, persistir el contador (Redis) y alertar si hay muchos bloqueos desde una IP.
+
+# Rendimiento de base de datos
+
+## 26. Las búsquedas de tickets son lentas
+
+**Síntoma:** `GET /tickets?q=texto` tarda cada vez más a medida que crece la tabla.
+
+**Hipótesis:** (1) falta un índice adecuado; (2) el índice existe pero no sirve para esa consulta; (3) las estadísticas del planificador están desactualizadas.
+
+**Comprobaciones:**
+```sql
+EXPLAIN (ANALYZE, BUFFERS) SELECT id FROM tickets WHERE title ILIKE '%texto%';
+\di+ idx_tickets_*
+SELECT indexrelname, idx_scan FROM pg_stat_user_indexes WHERE relname = 'tickets';
+```
+
+**Diagnóstico:** el plan mostraba `Seq Scan` con muchas filas descartadas. Un índice B-tree normal no acelera `ILIKE '%texto%'`, porque el patrón empieza por comodín.
+
+**Solución:** extensión `pg_trgm` e índices GIN con `gin_trgm_ops` sobre título y descripción (`database/04_indexes.sql`); índice compuesto `(assigned_to, status, created_at DESC)` para la bandeja del técnico. Después, `ANALYZE tickets`.
+
+**Prevención:** medir con `EXPLAIN ANALYZE` antes de crear índices y no indexar a ciegas: cada índice ralentiza las escrituras y ocupa espacio. Con términos muy frecuentes, `Seq Scan` puede ser la mejor opción. Revisar `idx_scan` para detectar índices sin uso.
