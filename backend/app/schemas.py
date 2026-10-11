@@ -239,3 +239,48 @@ class HistoryOut(BaseModel):
 class TokenOut(BaseModel):
     access_token: str
     token_type: str = "bearer"
+
+
+# ---------- Paginación ----------
+
+class TicketPage(BaseModel):
+    total: int
+    limit: int
+    offset: int
+    items: list[TicketOut]
+
+
+# ---------- Estadísticas ----------
+
+class CountItem(BaseModel):
+    label: str
+    count: int
+
+
+class TechnicianLoad(BaseModel):
+    technician_id: int
+    name: str
+    open_tickets: int
+    total_tickets: int
+
+
+class DayCount(BaseModel):
+    day: str
+    count: int
+
+
+class StatsSummary(BaseModel):
+    total_tickets: int
+    open_tickets: int
+    unassigned_tickets: int
+    resolved_tickets: int
+    avg_resolution_minutes: float | None
+
+
+class StatsOut(BaseModel):
+    summary: StatsSummary
+    by_status: list[CountItem]
+    by_priority: list[CountItem]
+    by_category: list[CountItem]
+    technician_load: list[TechnicianLoad]
+    per_day: list[DayCount]

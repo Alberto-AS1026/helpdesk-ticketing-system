@@ -1,7 +1,8 @@
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
+from typing import Literal
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session, selectinload
 
 from app.database import get_db
@@ -23,6 +24,7 @@ from app.schemas import (
     TicketAssign,
     TicketCreate,
     TicketOut,
+    TicketPage,
     TicketResolutionUpdate,
     TicketStatusChange,
 )
@@ -42,6 +44,13 @@ ALLOWED_TRANSITIONS = {
     "Pendiente": {"En progreso"},
     "Resuelto": {"Cerrado", "En progreso"},
     "Cerrado": set(),
+}
+
+SORT_COLUMNS = {
+    "created_at": Ticket.created_at,
+    "priority": Ticket.priority_id,
+    "status": Ticket.status,
+    "id": Ticket.id,
 }
 
 
@@ -121,14 +130,79 @@ def check_references(db: Session, data: TicketCreate) -> None:
         raise HTTPException(status_code=422, detail="El equipo indicado no existe")
 
 
+def escape_like(text_: str) -> str:
+    """Escapa % y _ para que se busquen literalmente."""
+    return text_.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
 # ---------- Tickets ----------
 
-@router.get("", response_model=list[TicketOut])
-def list_tickets(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
-    query = select(Ticket).options(*LOAD_OPTIONS).order_by(Ticket.created_at.desc())
+@router.get("", response_model=TicketPage)
+def list_tickets(
+    q: str | None = Query(default=None, min_length=2, max_length=100),
+    status_: str | None = Query(
+        default=None, alias="status", pattern="^(Abierto|En progreso|Pendiente|Resuelto|Cerrado)$"
+    ),
+    priority_id: int | None = None,
+    category_id: int | None = None,
+    technician_id: int | None = None,
+    created_from: date | None = None,
+    created_to: date | None = None,
+    unassigned: bool = False,
+    sort: Literal["created_at", "priority", "status", "id"] = "created_at",
+    order: Literal["asc", "desc"] = "desc",
+    limit: int = Query(default=20, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    conditions = []
+
+    # La restricción por rol va primero: ningún filtro puede saltársela
     if user.role == "user":
-        query = query.where(Ticket.created_by == user.id)
-    return [to_out(t) for t in db.scalars(query).all()]
+        conditions.append(Ticket.created_by == user.id)
+
+    if q:
+        pattern = f"%{escape_like(q)}%"
+        conditions.append(
+            or_(
+                Ticket.title.ilike(pattern, escape="\\"),
+                Ticket.description.ilike(pattern, escape="\\"),
+            )
+        )
+    if status_:
+        conditions.append(Ticket.status == status_)
+    if priority_id is not None:
+        conditions.append(Ticket.priority_id == priority_id)
+    if category_id is not None:
+        conditions.append(Ticket.category_id == category_id)
+    if technician_id is not None:
+        conditions.append(Ticket.assigned_to == technician_id)
+    if unassigned:
+        conditions.append(Ticket.assigned_to.is_(None))
+    if created_from:
+        conditions.append(
+            Ticket.created_at >= datetime.combine(created_from, datetime.min.time(), timezone.utc)
+        )
+    if created_to:
+        # Incluye todo el día final
+        end = datetime.combine(created_to + timedelta(days=1), datetime.min.time(), timezone.utc)
+        conditions.append(Ticket.created_at < end)
+
+    total = db.scalar(select(func.count()).select_from(Ticket).where(*conditions)) or 0
+
+    column = SORT_COLUMNS[sort]
+    ordering = column.asc() if order == "asc" else column.desc()
+    tickets = db.scalars(
+        select(Ticket)
+        .where(*conditions)
+        .options(*LOAD_OPTIONS)
+        .order_by(ordering, Ticket.id.desc())
+        .limit(limit)
+        .offset(offset)
+    ).all()
+
+    return TicketPage(total=total, limit=limit, offset=offset, items=[to_out(t) for t in tickets])
 
 
 @router.get("/{ticket_id}", response_model=TicketOut)
