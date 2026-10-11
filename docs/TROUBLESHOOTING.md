@@ -511,3 +511,24 @@ grep -c "def comment_to_out" backend/app/routers/tickets.py
 **Solución:** comprobar que `main` ya tiene el contenido (10 clases en `models.py`, 26 en `schemas.py`), cerrar el PR sin mergear y borrar la rama (`git push origin --delete rama`, `git branch -D rama`).
 
 **Prevención:** mergear cada PR antes de crear la rama siguiente. Si una rama posterior reescribe los mismos archivos, cerrar el PR anterior en vez de resolver conflictos de código que ya está integrado. Revisar de vez en cuando la pestaña **Pull requests** por si queda alguno abierto.
+
+# Seguridad y acceso
+
+## 25. Un usuario no puede iniciar sesión: `429 Too Many Requests`
+
+**Síntoma:** el login devuelve `429` con "Demasiados intentos fallidos", incluso con la contraseña correcta.
+
+**Hipótesis:** (1) el usuario falló 5 veces desde esa IP y está bloqueado temporalmente; (2) un atacante está probando contraseñas; (3) un cliente automático reintenta con credenciales viejas.
+
+**Comprobaciones:**
+```bash
+grep "Login bloqueado" backend/logs/helpdesk.log | tail
+grep "Login fallido" backend/logs/helpdesk.log | tail
+```
+La cabecera `Retry-After` indica los segundos que faltan.
+
+**Diagnóstico:** el bloqueo es por IP + email y dura 15 minutos. Si hay muchos fallos para emails distintos desde una misma IP, es un intento de fuerza bruta; si es un solo usuario, suele ser una contraseña olvidada o guardada con un valor antiguo.
+
+**Solución:** esperar a que acabe el bloqueo (o reiniciar la API, que borra el contador en memoria, solo en laboratorio). Si es un olvido, un administrador restablece la contraseña con `PATCH /users/{id}`.
+
+**Prevención:** informar al usuario del límite. En producción, persistir el contador (Redis) y alertar si hay muchos bloqueos desde una IP.
