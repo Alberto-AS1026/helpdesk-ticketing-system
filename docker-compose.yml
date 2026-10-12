@@ -2,15 +2,60 @@ services:
   db:
     image: postgres:16
     container_name: helpdesk-db
+    restart: unless-stopped
     environment:
       POSTGRES_USER: helpdesk_user
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: helpdesk
-    ports:
-      - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - ./database/01_schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      - ./database/04_indexes.sql:/docker-entrypoint-initdb.d/04_indexes.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U helpdesk_user -d helpdesk"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - backend
+
+  api:
+    build: ./backend
+    container_name: helpdesk-api
     restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://helpdesk_user:${DB_PASSWORD}@db:5432/helpdesk
+      SECRET_KEY: ${SECRET_KEY}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-60}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080}
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - backend
+
+  web:
+    image: nginx:1.27-alpine
+    container_name: helpdesk-web
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - ./frontend:/usr/share/nginx/html:ro
+      - ./nginx/helpdesk.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - backend
+
+networks:
+  backend:
 
 volumes:
   pgdata:
