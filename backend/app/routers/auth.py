@@ -47,7 +47,7 @@ def login(
         security_log.warning("Login fallido ip=%s usuario=%r", ip, form.username)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Email o contraseña incorrectos",
+            detail="Email otos",
             headers={"WWW-Authenticate": "Bearer"},
         )
 

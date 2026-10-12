@@ -64,12 +64,15 @@ def test_filtro_por_tecnico_y_sin_asignar(client, tech, datos):
 
 
 def test_filtro_por_fechas(client, tech, datos):
-    from datetime import date, timedelta
+    from datetime import datetime, timedelta, timezone
 
-    hoy = date.today()
+    # La API interpreta los días en UTC, así que el test también
+    hoy = datetime.now(timezone.utc).date()
     assert listar(client, tech, created_from=hoy.isoformat(), created_to=hoy.isoformat())["total"] == 5
     ayer = (hoy - timedelta(days=1)).isoformat()
     assert listar(client, tech, created_to=ayer)["total"] == 0
+    manana = (hoy + timedelta(days=1)).isoformat()
+    assert listar(client, tech, created_from=manana)["total"] == 0
 
 
 def test_paginacion_sin_repetidos_y_total_constante(client, tech, datos):
