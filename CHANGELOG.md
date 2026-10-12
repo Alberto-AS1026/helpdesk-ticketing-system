@@ -81,3 +81,12 @@ versionado semántico (https://semver.org/).
 - Renderizado con `textContent` para evitar XSS; sin `unsafe-inline` en scripts.
 - Chart.js servido localmente; sin dependencias de CDN.
 - IP real del cliente tras Nginx para el límite de intentos de login.
+
+## [0.6.0] - 2026-10-13
+
+### Added
+- Suite de 99 tests con pytest sobre una base de datos aislada `helpdesk_test`.
+- Tests de autenticación, flujo y reglas de tickets, visibilidad por rol, historial, CRUD, matriz de permisos, búsqueda y estadísticas.
+- Cobertura del 92 % medida con pytest-cov.
+- Integración continua con GitHub Actions y PostgreSQL como service container.
+- Protección de `main`: PR obligatorio y check `pytest` en verde.
