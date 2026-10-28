@@ -31,6 +31,7 @@ pensado para exponerse a Internet sin las mejoras indicadas al final.
 | Usuarios y técnicos | Técnico y administrador | Administrador |
 | Equipos | Todos los autenticados | Técnico y administrador |
 | Tickets | Usuario: solo los suyos. Técnico y administrador: todos | Crear: todos. Asignar, cambiar estado y registrar diagnóstico o solución: técnico y administrador |
+| Chat | Solo los dos participantes de cada conversación (ni siquiera el administrador lee chats ajenos) | Usuario: solo con técnicos y administradores. Técnico y administrador: con cualquier usuario activo |
 
 - Solo un administrador puede crear usuarios y asignar roles, por lo que nadie
   puede auto-asignarse el rol `admin`.
@@ -39,6 +40,20 @@ pensado para exponerse a Internet sin las mejoras indicadas al final.
 - La identidad (creador, autor de comentario, autor de cambio) se toma
   **siempre del token**, nunca del cuerpo de la petición.
 - La política de permisos está centralizada en `backend/app/main.py`.
+- **Chat:** quien no participa en una conversación recibe `404`. La lista de
+  contactos no incluye emails. No se puede escribir a un usuario desactivado,
+  aunque el historial se conserva. Los mensajes se pintan con `textContent`
+  (los enlaces `#12` se crean como nodos, sin `innerHTML`).
+- **WebSocket del chat:** el token se envía en el primer mensaje, nunca en la
+  URL (no queda en los logs de Nginx). Sin autenticar en 10 s, con un token no
+  válido o al caducar el JWT, el servidor cierra con el código `4401`. Como no
+  se usan cookies, otra web no puede abrir un socket en nombre del usuario.
+  Máximo 10 conexiones por usuario, mensajes del cliente de hasta 4 KB y cierre
+  tras 60 s sin actividad. El canal solo envía avisos: escribir y leer siguen
+  pasando por la API REST, con sus permisos y validaciones.
+- **Presencia:** cualquier usuario con el que puedes chatear ve si estás "en
+  línea" y tu última conexión. Se registra con la actividad en la aplicación,
+  como mucho una escritura cada 10 segundos por usuario.
 
 ## Protección frente a ataques
 
@@ -60,6 +75,16 @@ pensado para exponerse a Internet sin las mejoras indicadas al final.
 - Si se cambia `SECRET_KEY`, todos los tokens existentes dejan de ser válidos.
 - Si una clave se expone, hay que rotarla de inmediato.
 
+## Docker
+
+- Solo el servicio `web` (Nginx) publica un puerto en el host. La API y
+  PostgreSQL están en la red interna `backend`.
+- Nginx tiene una IP fija en esa red y la API solo acepta `X-Forwarded-For`
+  desde ella (`FORWARDED_ALLOW_IPS`). Nginx sobrescribe la cabecera con la IP
+  real del cliente, así que no se puede falsear para saltarse el límite de login.
+- La API corre con un usuario sin privilegios (`appuser`, uid 1001).
+- `docker compose` no arranca si faltan `DB_PASSWORD` o `SECRET_KEY` en `.env`.
+
 ## Registro de eventos
 
 El logger `helpdesk.security` registra logins correctos, fallidos y bloqueados,
@@ -70,7 +95,8 @@ y no se versionan.
 ## Datos de laboratorio
 
 - Los usuarios `@empresa.test` del seed tienen una contraseña de desarrollo
-  conocida, asignada con `scripts/set_dev_passwords.py`. **Solo para
+  conocida, asignada con `scripts/set_dev_passwords.py` o, en Docker, con
+  `database/05_dev_passwords.sql`. **Solo para
   laboratorio.** En un entorno real las contraseñas iniciales no se versionan:
   se generan aleatorias y se obliga a cambiarlas en el primer acceso.
 
@@ -87,16 +113,15 @@ y no se versionan.
 - No hay endpoint para que el usuario cambie su propia contraseña ni flujo de
   recuperación.
 - No hay autenticación de doble factor.
-- PostgreSQL publica el puerto 5432 en el host para desarrollo. En la
-  dockerización se restringirá a la red interna de Docker.
+- Los WebSockets se registran en memoria: un solo proceso de uvicorn.
+- El chat no tiene límite de mensajes por minuto: un usuario podría saturar una
+  conversación. Los mensajes no se cifran en la base de datos ni caducan.
 
 ## Mejoras previstas
 
-1. Nginx con HTTPS y `Content-Security-Policy`.
-2. Puerto de PostgreSQL solo en la red interna de Docker.
-3. Endpoint de cambio de contraseña y política de contraseñas iniciales.
-4. Límite de intentos persistente.
-5. Tests automáticos de permisos (Fase 8).
+1. HTTPS (TLS) en Nginx.
+2. Endpoint de cambio de contraseña y política de contraseñas iniciales.
+3. Límite de intentos persistente.
 
 ## Cómo informar de un problema
 

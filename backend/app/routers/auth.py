@@ -2,7 +2,7 @@ import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -39,7 +39,8 @@ def login(
             headers={"Retry-After": str(wait)},
         )
 
-    user = db.scalars(select(User).where(User.email == form.username)).first()
+    # El email no distingue mayúsculas (igual que la clave del límite de intentos)
+    user = db.scalars(select(User).where(func.lower(User.email) == form.username.lower())).first()
     password_ok = verify_password(form.password, user.password_hash if user else DUMMY_HASH)
 
     if user is None or not password_ok or not user.is_active:

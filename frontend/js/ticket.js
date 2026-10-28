@@ -54,7 +54,26 @@ function renderDetail() {
     else dd.textContent = value;
     dl.appendChild(dd);
   }
+  renderChatLink();
   $("detail-card").hidden = false;
+}
+
+/** Usuario: chat con su técnico. Personal: chat con quien abrió el ticket. */
+function renderChatLink() {
+  let target = null;
+  let label = "";
+  if (me.role === "user" && ticket.technician_user_id) {
+    target = ticket.technician_user_id;
+    label = "Chatear con " + ticket.technician_name;
+  } else if (me.role !== "user" && ticket.created_by !== me.id) {
+    target = ticket.created_by;
+    label = "Chatear con " + ticket.creator_name;
+  }
+  $("chat-cta").hidden = target === null;
+  if (target !== null) {
+    $("chat-link").textContent = label;
+    $("chat-link").href = "/chat.html?user=" + Number(target) + "&ticket=" + Number(ticket.id);
+  }
 }
 
 function renderThread(listId, entries, build) {

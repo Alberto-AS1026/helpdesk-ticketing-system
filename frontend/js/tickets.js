@@ -1,7 +1,6 @@
 "use strict";
 
 requireLogin();
-document.getElementById("logout-btn").addEventListener("click", logout);
 
 const PAGE_SIZE = 20;
 const state = { offset: 0, total: 0 };
@@ -136,10 +135,8 @@ els.next.addEventListener("click", () => {
 
 async function init() {
   try {
-    const me = await apiFetch("/auth/me");
-    document.getElementById("user-name").textContent = me.full_name + " (" + me.role + ")";
+    const me = await loadCurrentUser();
     if (me.role !== "user") els.unassignedRow.hidden = false;
-    if (me.role !== "user") document.getElementById("dash-link").hidden = false;
 
     const [priorities, categories] = await Promise.all([
       apiFetch("/priorities"),

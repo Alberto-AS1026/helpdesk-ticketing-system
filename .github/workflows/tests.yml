@@ -53,6 +53,7 @@ jobs:
           export PGPASSWORD=ci_password
           psql -h localhost -U helpdesk_user -d helpdesk_test -f database/01_schema.sql
           psql -h localhost -U helpdesk_user -d helpdesk_test -f database/04_indexes.sql
+          psql -h localhost -U helpdesk_user -d helpdesk_test -f database/06_chat.sql
 
       - name: Ejecutar tests con cobertura
         working-directory: backend

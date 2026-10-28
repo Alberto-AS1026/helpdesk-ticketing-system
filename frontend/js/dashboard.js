@@ -7,6 +7,24 @@ const charts = {};
 
 const COLORS = ["#2563eb", "#f59e0b", "#8b5cf6", "#10b981", "#6b7280", "#ef4444", "#14b8a6"];
 
+// Mismo código de color que las etiquetas de estado
+const STATUS_COLORS = {
+  "Abierto": "#ef4444",
+  "En progreso": "#eab308",
+  "Pendiente": "#facc15",
+  "Resuelto": "#22c55e",
+  "Cerrado": "#15803d",
+};
+
+let lastData = null;
+
+/** Texto y rejilla de los gráficos según el tema activo. */
+function applyChartTheme() {
+  const css = getComputedStyle(document.documentElement);
+  Chart.defaults.color = css.getPropertyValue("--muted").trim();
+  Chart.defaults.borderColor = css.getPropertyValue("--border").trim();
+}
+
 function drawChart(id, type, labels, datasets, options = {}) {
   if (charts[id]) charts[id].destroy();
   charts[id] = new Chart($(id), {
@@ -35,10 +53,16 @@ function renderKpis(s) {
 }
 
 function render(data) {
+  lastData = data;
+  applyChartTheme();
   renderKpis(data.summary);
 
   drawChart("c-status", "doughnut", data.by_status.map((i) => i.label),
-    [{ data: data.by_status.map((i) => i.count), backgroundColor: COLORS }]);
+    [{
+      data: data.by_status.map((i) => i.count),
+      backgroundColor: data.by_status.map((i) => STATUS_COLORS[i.label] || "#6b7280"),
+      borderColor: getComputedStyle(document.documentElement).getPropertyValue("--card").trim(),
+    }]);
 
   drawChart("c-priority", "bar", data.by_priority.map((i) => i.label),
     [{ label: "Tickets", data: data.by_priority.map((i) => i.count), backgroundColor: "#2563eb" }],
@@ -70,6 +94,11 @@ async function load() {
 }
 
 $("days").addEventListener("change", load);
+
+// Al cambiar de tema se repintan los gráficos con los datos ya cargados
+document.addEventListener("themechange", () => {
+  if (lastData) render(lastData);
+});
 
 async function init() {
   try {

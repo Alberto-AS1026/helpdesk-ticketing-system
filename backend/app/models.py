@@ -119,3 +119,36 @@ class TicketHistory(Base):
     changed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     user: Mapped["User"] = relationship()
+
+
+class ChatConversation(Base):
+    __tablename__ = "chat_conversations"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_low_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    user_high_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    low_last_read_id: Mapped[int] = mapped_column(Integer, default=0)
+    high_last_read_id: Mapped[int] = mapped_column(Integer, default=0)
+    low_typing_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    high_typing_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    user_low: Mapped["User"] = relationship(foreign_keys=[user_low_id])
+    user_high: Mapped["User"] = relationship(foreign_keys=[user_high_id])
+
+
+class ChatMessage(Base):
+    __tablename__ = "chat_messages"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    conversation_id: Mapped[int] = mapped_column(ForeignKey("chat_conversations.id"))
+    sender_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    body: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class ChatPresence(Base):
+    __tablename__ = "chat_presence"
+
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), primary_key=True)
+    last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
