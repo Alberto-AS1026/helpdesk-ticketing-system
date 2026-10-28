@@ -12,7 +12,7 @@ versionado semántico (https://semver.org/).
 - Carga automática del esquema, seed e índices al crear el volumen de PostgreSQL.
 - `database/05_dev_passwords.sql`: contraseña de laboratorio para los usuarios del seed.
 - `nginx/helpdesk.docker.conf` y healthchecks en `db` y `api`.
-- README con instrucciones de instalación, usuarios de prueba y tests.
+- README completo: capturas, prueba guiada, diagramas (arquitectura, estados, chat y modelo de datos), API, configuración, tests y limitaciones.
 - Chat 1 a 1 entre usuarios y personal técnico (`/chat`, `chat.html`) con interfaz de app de mensajería: avatares, buscador, burbujas agrupadas, separadores de día, checks de enviado/entregado/leído, «en línea» / «últ. vez», «escribiendo…», emojis, enlaces a tickets (`#12`) y vista móvil de un panel.
 - Contador de no leídos en la barra superior y botón «Chatear con…» en el detalle del ticket.
 - Tiempo real con WebSocket (`/chat/ws`): mensajes, leído, «escribiendo…» y presencia al instante; contador de la barra superior actualizado en todas las páginas; reconexión automática y vuelta al polling si el WebSocket no está disponible. Nginx configurado para WebSocket y CSP `connect-src` ampliada.
@@ -32,6 +32,7 @@ versionado semántico (https://semver.org/).
 ### Fixed
 - `requirements-dev.txt` no incluía `pytest`, `httpx` ni las dependencias de la app (el CI no podía instalar el entorno).
 - Caso duplicado y numeración de `TROUBLESHOOTING.md`.
+- Las etiquetas de estado ya no se parten en dos líneas en el listado.
 - Nginx envía `Cache-Control: no-cache`: el navegador ya no mezcla archivos JS antiguos de su caché con los nuevos tras una actualización (rompía el chat en Firefox).
 
 ### Security
