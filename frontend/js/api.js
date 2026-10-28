@@ -88,8 +88,158 @@ function formatDate(iso) {
 async function loadCurrentUser() {
   document.getElementById("logout-btn").addEventListener("click", logout);
   const me = await apiFetch("/auth/me");
-  document.getElementById("user-name").textContent = me.full_name + " (" + me.role + ")";
+  document.getElementById("user-name").textContent = me.full_name;
+  const dashLink = document.getElementById("dash-link");
+  if (dashLink && me.role !== "user") dashLink.hidden = false;
+  startUnreadBadge();
   return me;
+}
+
+/** Contador de mensajes de chat sin leer en la barra superior. */
+async function refreshUnreadBadge() {
+  const badge = document.getElementById("chat-unread");
+  if (!badge) return;
+  try {
+    const data = await apiFetch("/chat/unread");
+    badge.textContent = data.unread > 99 ? "99+" : String(data.unread);
+    badge.hidden = data.unread === 0;
+  } catch (err) {
+    // Un fallo puntual no debe romper la página; se reintenta en el siguiente ciclo
+  }
+}
+
+/**
+ * Conexión WebSocket con la API para los avisos del chat en tiempo real.
+ * Se autentica con el primer mensaje (el token nunca va en la URL), hace
+ * ping cada 25 s y se reconecta sola con espera creciente. Mientras no hay
+ * conexión, las páginas siguen funcionando con el polling de siempre.
+ *
+ *   realtime.on("message" | "read" | "typing" | "presence" | "open" | "close", fn)
+ */
+const realtime = (() => {
+  const listeners = {};
+  let ws = null;
+  let connected = false;
+  let started = false;
+  let stopped = false;
+  let retry = 0;
+  let retryTimer = null;
+  let pingTimer = null;
+
+  function emit(type, data) {
+    for (const fn of listeners[type] || []) {
+      try {
+        fn(data);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  }
+
+  function url() {
+    return (window.location.protocol === "https:" ? "wss://" : "ws://") + window.location.host + API + "/chat/ws";
+  }
+
+  function scheduleReconnect() {
+    if (stopped || retryTimer) return;
+    const delay = Math.min(30000, 1000 * 2 ** retry) + Math.random() * 500;
+    retry += 1;
+    retryTimer = setTimeout(() => {
+      retryTimer = null;
+      connect();
+    }, delay);
+  }
+
+  function connect() {
+    const token = getToken();
+    if (!token || stopped || ws) return;
+    try {
+      ws = new WebSocket(url());
+    } catch (err) {
+      ws = null;
+      scheduleReconnect();
+      return;
+    }
+    ws.onopen = () => ws.send(JSON.stringify({ type: "auth", token: token }));
+    ws.onmessage = (event) => {
+      let msg;
+      try {
+        msg = JSON.parse(event.data);
+      } catch (err) {
+        return;
+      }
+      if (msg.type === "ready") {
+        connected = true;
+        retry = 0;
+        pingTimer = setInterval(() => send({ type: "ping" }), 25000);
+        emit("open");
+      } else if (msg.type !== "pong") {
+        emit(msg.type, msg);
+      }
+    };
+    ws.onclose = (event) => {
+      const wasConnected = connected;
+      connected = false;
+      ws = null;
+      clearInterval(pingTimer);
+      if (wasConnected) emit("close");
+      if (event.code === 4401) {
+        // Token no válido o caducado: una llamada REST dará 401 y cerrará la sesión
+        stopped = true;
+        apiFetch("/auth/me").catch(() => {});
+        return;
+      }
+      scheduleReconnect();
+    };
+  }
+
+  function send(obj) {
+    if (!connected || !ws) return false;
+    ws.send(JSON.stringify(obj));
+    return true;
+  }
+
+  // Al recuperar la red o volver a la pestaña, se reintenta sin esperar
+  function retryNow() {
+    if (!started || connected || ws || stopped) return;
+    clearTimeout(retryTimer);
+    retryTimer = null;
+    retry = 0;
+    connect();
+  }
+  window.addEventListener("online", retryNow);
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) retryNow();
+  });
+
+  return {
+    start() {
+      if (started) return;
+      started = true;
+      connect();
+    },
+    on(type, fn) {
+      (listeners[type] = listeners[type] || []).push(fn);
+    },
+    send: send,
+    get connected() {
+      return connected;
+    },
+  };
+})();
+
+let unreadTimer = null;
+
+function startUnreadBadge() {
+  if (unreadTimer) return;
+  refreshUnreadBadge();
+  realtime.start();
+  // Con WebSocket, el contador se actualiza al llegar cada aviso
+  for (const type of ["open", "message", "read"]) realtime.on(type, refreshUnreadBadge);
+  // Sin WebSocket (plan B), se consulta cada 15 s
+  unreadTimer = setInterval(() => {
+    if (!document.hidden && !realtime.connected) refreshUnreadBadge();
+  }, 15000);
 }
 
 

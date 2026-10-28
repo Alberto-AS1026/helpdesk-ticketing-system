@@ -30,7 +30,7 @@ PASSWORD = "Test_Password_1"
 PASSWORD_HASH = hash_password(PASSWORD)
 
 TABLES = (
-    "ticket_history, ticket_comments, tickets, computers, technicians, "
+    "chat_presence, chat_messages, chat_conversations, ticket_history, ticket_comments, tickets, computers, technicians, "
     "users, priorities, categories, departments"
 )
 

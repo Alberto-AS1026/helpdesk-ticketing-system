@@ -4,13 +4,69 @@ services:
     container_name: helpdesk-db
     environment:
       POSTGRES_USER: helpdesk_user
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Falta DB_PASSWORD en .env}
       POSTGRES_DB: helpdesk
-    ports:
-      - "5432:5432"
+    # Sin "ports": PostgreSQL solo es accesible desde la red interna de Docker.
+    # Los scripts se ejecutan en orden alfabético y solo la primera vez
+    # (cuando el volumen pgdata está vacío).
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - ./database/01_schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      - ./database/02_seed.sql:/docker-entrypoint-initdb.d/02_seed.sql:ro
+      - ./database/04_indexes.sql:/docker-entrypoint-initdb.d/04_indexes.sql:ro
+      - ./database/05_dev_passwords.sql:/docker-entrypoint-initdb.d/05_dev_passwords.sql:ro
+      - ./database/06_chat.sql:/docker-entrypoint-initdb.d/06_chat.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U helpdesk_user -d helpdesk"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - backend
     restart: unless-stopped
+
+  api:
+    build: ./backend
+    image: helpdesk-api
+    container_name: helpdesk-api
+    environment:
+      DATABASE_URL: postgresql://helpdesk_user:${DB_PASSWORD}@db:5432/helpdesk
+      SECRET_KEY: ${SECRET_KEY:?Falta SECRET_KEY en .env}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-60}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080}
+      # Solo se confía en X-Forwarded-For si viene de Nginx (IP fija)
+      FORWARDED_ALLOW_IPS: 172.28.0.10
+    volumes:
+      - api-logs:/srv/logs
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - backend
+    restart: unless-stopped
+
+  web:
+    image: nginx:1.27-alpine
+    container_name: helpdesk-web
+    ports:
+      - "${WEB_PORT:-8080}:8080"
+    volumes:
+      - ./nginx/helpdesk.docker.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./frontend:/usr/share/nginx/html:ro
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      backend:
+        ipv4_address: 172.28.0.10
+    restart: unless-stopped
+
+networks:
+  backend:
+    ipam:
+      config:
+        - subnet: 172.28.0.0/24
 
 volumes:
   pgdata:
+  api-logs:

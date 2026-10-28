@@ -10,6 +10,7 @@ from app.logging_config import setup_logging
 from app.routers import (
     auth,
     categories,
+    chat,
     computers,
     departments,
     priorities,
@@ -71,6 +72,11 @@ app.include_router(
 app.include_router(
     tickets.router, dependencies=[Depends(protect(read=ALL_ROLES, write=ALL_ROLES))]
 )
+app.include_router(
+    chat.router, dependencies=[Depends(protect(read=ALL_ROLES, write=ALL_ROLES))]
+)
+# WebSocket del chat: se autentica con el primer mensaje (ver routers/chat.py)
+app.include_router(chat.ws_router)
 
 
 @app.get("/health")

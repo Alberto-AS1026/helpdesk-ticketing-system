@@ -65,6 +65,7 @@ def to_out(ticket: Ticket) -> TicketOut:
         category_name=ticket.category.name,
         creator_name=ticket.creator.full_name,
         technician_name=ticket.technician.user.full_name if ticket.technician else None,
+        technician_user_id=ticket.technician.user_id if ticket.technician else None,
     )
 
 

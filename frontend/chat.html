@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Help Desk - Chat</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="/js/theme.js"></script>
+</head>
+<body class="chat-body">
+  <nav class="topbar">
+    <span class="nav-links">
+      <a class="link" href="/"><strong>Help Desk</strong></a>
+      <a class="link" href="/">Tickets</a>
+      <a class="link" id="dash-link" href="/dashboard.html" hidden>Dashboard</a>
+      <a class="link" href="/chat.html">Chat <span id="chat-unread" class="count-badge" hidden></span></a>
+    </span>
+    <div class="user-box">
+      <span id="user-name" class="muted"></span>
+      <div class="user-actions">
+        <button id="theme-btn" class="icon-btn" type="button" title="Cambiar tema" aria-label="Cambiar tema">
+          <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+        </button>
+        <button id="logout-btn" class="icon-btn" type="button" title="Salir" aria-label="Salir">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <main class="chat-app" id="chat-app">
+    <!-- Columna izquierda: chats y contactos -->
+    <aside class="chat-side">
+      <header class="side-header">
+        <span class="avatar" id="my-avatar" aria-hidden="true"></span>
+        <strong class="side-title">Chats</strong>
+        <button id="new-chat-btn" class="round-btn" type="button" title="Nuevo chat" aria-label="Nuevo chat">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+        </button>
+      </header>
+      <div class="search-wrap">
+        <label for="search" class="sr-only">Buscar un chat</label>
+        <input id="search" type="search" placeholder="Buscar un chat" autocomplete="off">
+      </div>
+      <p id="message" class="chat-error" role="alert"></p>
+      <ul class="conv-list" id="conv-list"></ul>
+
+      <div class="contacts-panel" id="contacts-panel" hidden>
+        <header class="side-header contacts-header">
+          <button id="contacts-back" class="round-btn" type="button" title="Volver" aria-label="Volver">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+          </button>
+          <strong class="side-title">Nuevo chat</strong>
+        </header>
+        <div class="search-wrap">
+          <label for="contact-search" class="sr-only">Buscar contacto</label>
+          <input id="contact-search" type="search" placeholder="Buscar contacto" autocomplete="off">
+        </div>
+        <ul class="conv-list" id="contact-list"></ul>
+      </div>
+    </aside>
+
+    <!-- Columna derecha: conversación -->
+    <section class="chat-main">
+      <div class="chat-empty" id="chat-empty">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+        <h2>Chat de soporte</h2>
+        <p>Habla con el técnico o con quien abrió la incidencia e intenta resolverla en remoto antes de desplazarte.</p>
+        <p class="muted">&#128274; Solo tú y la otra persona podéis leer estos mensajes.</p>
+      </div>
+
+      <div class="chat-active" id="chat-active" hidden>
+        <header class="chat-header">
+          <button id="back-btn" class="round-btn back-btn" type="button" title="Volver a los chats" aria-label="Volver a los chats">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+          </button>
+          <span class="avatar" id="peer-avatar" aria-hidden="true"></span>
+          <div class="peer">
+            <strong id="peer-name"></strong>
+            <span id="peer-status" class="peer-status" aria-live="polite"></span>
+          </div>
+        </header>
+
+        <div class="messages-wrap">
+          <ol class="messages" id="messages"></ol>
+          <button id="scroll-down" class="scroll-down" type="button" title="Ir al final" aria-label="Ir al final" hidden>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+            <span id="new-count" class="count-badge" hidden></span>
+          </button>
+        </div>
+
+        <p class="chat-error composer-error" id="send-error" role="alert"></p>
+        <form id="send-form" class="composer" novalidate>
+          <div class="emoji-panel" id="emoji-panel" hidden></div>
+          <button id="emoji-btn" class="round-btn" type="button" title="Emojis" aria-label="Emojis" aria-expanded="false">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+          </button>
+          <label for="msg-text" class="sr-only">Mensaje</label>
+          <textarea id="msg-text" rows="1" maxlength="2000" placeholder="Escribe un mensaje"></textarea>
+          <button id="send-btn" class="send-btn" type="submit" title="Enviar" aria-label="Enviar">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7z"/></svg>
+          </button>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/chat.js"></script>
+</body>
+</html>

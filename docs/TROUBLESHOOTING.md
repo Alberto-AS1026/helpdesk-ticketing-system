@@ -24,6 +24,10 @@ diagnóstico, solución y prevención**.
 | Git y GitHub | 15, 16, 17, 18, 19, 24 |
 | Edición de archivos | 20, 21 |
 | Terminal y shell | 22, 23 |
+| Seguridad y acceso | 25 |
+| Rendimiento de base de datos | 26, 27, 28 |
+| Testing | 29, 30, 31, 32 |
+| Frontend y caché | 33 |
 
 ---
 
@@ -599,6 +603,10 @@ y en `auth.py`: `ip = (request.client.host if request.client else None) or "desc
 
 **Prevención:** confiar en `X-Forwarded-For` solo desde el proxy (nunca `*`), porque si no un atacante falsearía su IP y evitaría el bloqueo. Con `--host 127.0.0.1` la API solo es accesible a través de Nginx.
 
+---
+
+# Testing
+
 ## 29. Un script SQL del repositorio no existe (`No such file or directory`)
 
 **Síntoma:** al cargar `database/01_schema.sql` en la base de test: `No such file or directory`, seguido de `relation "tickets" does not exist` al cargar los índices.
@@ -618,33 +626,9 @@ git log --oneline --all -- database/01_schema.sql | head
 
 **Prevención:** antes de borrar una rama, `git branch --merged main` debe incluirla. Los scripts SQL se cargan en orden (`01_`, `02_`...). Un `git log --all -- archivo` encuentra archivos de ramas ya borradas.
 
-
 ---
 
-# Testing
-
-## 30. Un script SQL del repositorio no existe (`No such file or directory`)
-
-**Síntoma:** al cargar `database/01_schema.sql` en la base de test: `No such file or directory`, seguido de `relation "tickets" does not exist` al cargar los índices.
-
-**Hipótesis:** (1) el archivo está en una rama no integrada; (2) tiene otro nombre; (3) se borró.
-
-**Comprobaciones:**
-```bash
-ls database
-git ls-tree -r --name-only main | grep database
-git log --oneline --all -- database/01_schema.sql | head
-```
-
-**Diagnóstico:** el esquema nunca llegó a `main` y la rama que lo contenía se borró en la limpieza. El commit seguía en el historial.
-
-**Solución:** `git checkout <commit> -- database/01_schema.sql`, commitearlo en una rama y mergearlo. Después recrear la base de test (`DROP DATABASE` / `CREATE DATABASE`) y cargar el esquema antes que los índices.
-
-**Prevención:** antes de borrar una rama, `git branch --merged main` debe incluirla. Los scripts SQL se cargan en orden (`01_`, `02_`...). `git log --all -- archivo` encuentra archivos de ramas ya borradas.
-
----
-
-## 31. pytest: `collected 0 items` y carpeta `tests/` inexistente
+## 30. pytest: `collected 0 items` y carpeta `tests/` inexistente
 
 **Síntoma:** `python -m pytest` termina con `no tests ran` y `collected 0 items`.
 
@@ -666,7 +650,7 @@ python -m pytest --collect-only -q
 
 ---
 
-## 33. pytest se niega a arrancar: `TEST_DATABASE_URL debe apuntar a una base ..._test`
+## 31. pytest se niega a arrancar: `TEST_DATABASE_URL debe apuntar a una base ..._test`
 
 **Síntoma:** `ImportError while loading conftest` con `RuntimeError: TEST_DATABASE_URL debe apuntar a una base cuyo nombre termine en '_test'`.
 
@@ -684,7 +668,7 @@ grep TEST_DATABASE_URL ~/helpdesk/.env | sed 's/:[^:@]*@/:***@/'
 
 **Prevención:** mantener la variable en `.env.example`. No quitar la comprobación de `_test`: es el seguro contra borrar datos reales.
 
-## 33. Un test falla con `assert 201 == 422`
+## 32. Un test falla con `assert 201 == 422`
 
 **Síntoma:** `test_crear_ticket_con_datos_invalidos[cambio1]` falla: se esperaba 422 y la API devolvió 201.
 
@@ -701,3 +685,26 @@ python -m pytest -q tests/test_tickets_rules.py -k datos_invalidos
 **Solución:** usar un valor inválido de verdad (`"abcd"`, 4 caracteres) y añadir un test del valor límite (`"abcde"` es válido).
 
 **Prevención:** ante un test fallido, comparar el mensaje con la regla real antes de tocar el código de la app. Probar siempre los valores límite.
+
+---
+
+# Frontend y caché
+
+## 33. Chat roto tras una actualización: `state.me is null` y sin nombre en la barra
+
+**Síntoma:** tras desplegar el WebSocket del chat, en Firefox la página de chat no muestra el nombre del usuario y, al abrir una conversación, aparece `can't access property "id", state.me is null`. En un navegador limpio funciona.
+
+**Hipótesis:** (1) fallo de autenticación en la API; (2) error de JavaScript al cargar la página; (3) el navegador usa archivos antiguos de su caché.
+
+**Comprobaciones:**
+```bash
+docker compose logs api | grep "auth/me"              # todas 200: la API identifica bien
+docker compose logs web | grep "<IP del navegador>"     # qué pidió el navegador al cargar
+curl -sI localhost:8080/js/api.js | grep -iE "cache-control|etag"
+```
+
+**Diagnóstico:** al recargar `chat.html` el navegador no pidió `api.js` ni `chat.js` y nunca llamó a `/auth/me`. Nginx enviaba `Last-Modified` sin `Cache-Control`, así que Firefox aplicaba su caché heurística y mezcló un `api.js` antiguo (sin `realtime`) con el `chat.js` nuevo. `chat.js` fallaba a mitad de carga (`realtime is not defined`), `init()` no llegaba a ejecutarse y los botones que ya estaban registrados abrían chats sin usuario. Se reprodujo sirviendo el `api.js` antiguo con el `chat.js` nuevo.
+
+**Solución:** `add_header Cache-Control "no-cache" always;` en Nginx. El navegador revalida con el `ETag` antes de usar su copia (`304` si no ha cambiado). En el navegador afectado basta con Ctrl+Shift+R una vez.
+
+**Prevención:** declarar siempre la política de caché de los estáticos. Ojo: un `add_header` dentro de un `location` anula todos los del `server`, así que va a nivel de `server`, junto a las cabeceras de seguridad.

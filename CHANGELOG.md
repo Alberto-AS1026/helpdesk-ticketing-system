@@ -7,12 +7,38 @@ versionado semántico (https://semver.org/).
 
 ## [Unreleased]
 
-### Planned
-- Núcleo de tickets: creación, asignación, estados, comentarios e historial.
-- Autenticación con JWT y roles (usuario, técnico, administrador).
-- Búsqueda, filtros y estadísticas.
-- Frontend y dashboard.
-- Dockerización completa del proyecto.
+### Added
+- Dockerización completa: `docker-compose.yml` con PostgreSQL, API y Nginx.
+- Carga automática del esquema, seed e índices al crear el volumen de PostgreSQL.
+- `database/05_dev_passwords.sql`: contraseña de laboratorio para los usuarios del seed.
+- `nginx/helpdesk.docker.conf` y healthchecks en `db` y `api`.
+- README completo: capturas, prueba guiada, diagramas (arquitectura, estados, chat y modelo de datos), API, configuración, tests y limitaciones.
+- Chat 1 a 1 entre usuarios y personal técnico (`/chat`, `chat.html`) con interfaz de app de mensajería: avatares, buscador, burbujas agrupadas, separadores de día, checks de enviado/entregado/leído, «en línea» / «últ. vez», «escribiendo…», emojis, enlaces a tickets (`#12`) y vista móvil de un panel.
+- Contador de no leídos en la barra superior y botón «Chatear con…» en el detalle del ticket.
+- Tiempo real con WebSocket (`/chat/ws`): mensajes, leído, «escribiendo…» y presencia al instante; contador de la barra superior actualizado en todas las páginas; reconexión automática y vuelta al polling si el WebSocket no está disponible. Nginx configurado para WebSocket y CSP `connect-src` ampliada.
+- Endpoints `/chat/conversations/{id}/sync` (todo lo que necesita la conversación abierta en una sola llamada) y `/chat/conversations/{id}/typing`.
+- `database/06_chat.sql` (tablas `chat_conversations`, `chat_messages` y `chat_presence`; se puede reaplicar) y 31 tests del chat (10 de WebSocket).
+- `technician_user_id` en la respuesta de los tickets.
+- Modo oscuro/claro con botón junto a «Salir» (a su izquierda) y también en la página de login; se recuerda la elección y, por defecto, sigue al sistema.
+
+### Changed
+- El login no distingue mayúsculas en el email.
+- Estados de ticket con código de color: rojo (Abierto), amarillo (En progreso, Pendiente) y verde (Resuelto, Cerrado), también en el gráfico del dashboard.
+- La barra superior muestra solo el nombre del usuario, sin el rol.
+- El botón «Salir» pasa a ser un icono.
+- Barra de navegación igual en todas las páginas.
+- Nginx (Docker) resuelve la API por DNS en cada petición, para no dar `502` si el contenedor se recrea.
+
+### Fixed
+- `requirements-dev.txt` no incluía `pytest`, `httpx` ni las dependencias de la app (el CI no podía instalar el entorno).
+- Caso duplicado y numeración de `TROUBLESHOOTING.md`.
+- Las etiquetas de estado ya no se parten en dos líneas en el listado.
+- Nginx envía `Cache-Control: no-cache`: el navegador ya no mezcla archivos JS antiguos de su caché con los nuevos tras una actualización (rompía el chat en Firefox).
+
+### Security
+- PostgreSQL y la API ya no publican puertos en el host: solo Nginx es accesible.
+- La API solo confía en `X-Forwarded-For` si viene de la IP fija de Nginx (antes `*`, que permitía falsear la IP y saltarse el límite de login).
+- Nginx sobrescribe `X-Forwarded-For` en lugar de añadir al valor del cliente.
 
 ## [0.1.0] - 2026-10-07
 

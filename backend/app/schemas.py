@@ -191,6 +191,7 @@ class TicketOut(BaseModel):
     category_name: str
     creator_name: str
     technician_name: str | None
+    technician_user_id: int | None
 
 
 class TicketAssign(BaseModel):
@@ -232,6 +233,62 @@ class HistoryOut(BaseModel):
     old_value: str | None
     new_value: str | None
     changed_at: datetime
+
+
+# ---------- Chat ----------
+
+class ChatContact(BaseModel):
+    """Usuario con el que se puede abrir una conversación (sin email)."""
+    id: int
+    full_name: str
+    role: str
+
+
+class ConversationCreate(BaseModel):
+    user_id: int
+
+
+class ConversationOut(BaseModel):
+    id: int
+    other: ChatContact
+    other_online: bool
+    other_last_seen_at: datetime | None
+    last_message: str | None
+    last_message_at: datetime | None
+    last_message_mine: bool
+    last_message_read: bool  # el último mensaje es mío y la otra persona ya lo leyó
+    unread: int
+
+
+class ChatMessageCreate(BaseModel):
+    body: str = Field(min_length=1, max_length=2000)
+
+
+class ChatMessageOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    conversation_id: int
+    sender_id: int
+    body: str
+    created_at: datetime
+
+
+class ChatSync(BaseModel):
+    """Lo que la conversación abierta necesita en cada ciclo de polling."""
+    messages: list[ChatMessageOut]
+    other_last_read_id: int
+    other_online: bool
+    other_last_seen_at: datetime | None
+    other_typing: bool
+
+
+class ChatRead(BaseModel):
+    last_read_id: int = Field(ge=0)
+
+
+class UnreadOut(BaseModel):
+    unread: int
 
 
 # ---------- Autenticación ----------
