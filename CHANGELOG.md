@@ -25,6 +25,7 @@ versionado semántico (https://semver.org/).
 - Interfaz rediseñada al estilo de una consola ITSM: cabecera oscura con buscador global (por número `INC0000001` o texto), navegador lateral con vistas por rol (Mis incidentes, Asignados a mí, Sin asignar, Abiertos, En progreso, Pendientes, Resueltos, Todos), listas densas con columnas ordenables, migas de filtro y paginador, y formulario de incidente con flujo de estados, botones de acción (Iniciar trabajo, Poner en espera, Resolver, Cerrar, Reabrir), campos en dos columnas, pestañas de notas y de resolución, y flujo de actividad que une comentarios e historial. Nuevo `frontend/js/layout.js` con la estructura común.
 - Alta de incidentes con equipo afectado (preseleccionado el del solicitante) y prioridad en formato `1 - Crítica` … `4 - Baja`.
 - Indicadores del dashboard enlazados a la lista filtrada y ejes sin decimales.
+- README y capturas de `docs/img/` actualizados a la nueva interfaz.
 - Seed reducido a 5 usuarios (`administrador`, `tecnicoA`, `tecnicoB`, `empleadoA`, `empleadoB` `@empresa.test`) con contraseña = nombre sin espacios + `Help2026`.
 - El login no distingue mayúsculas en el email.
 - Estados de ticket con código de color: rojo (Abierto), amarillo (En progreso, Pendiente) y verde (Resuelto, Cerrado), también en el gráfico del dashboard.

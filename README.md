@@ -10,10 +10,14 @@ Sistema de **gestión de incidencias de soporte técnico** (help desk) para una
 empresa: los empleados abren tickets, los técnicos los asignan, diagnostican y
 resuelven, y el administrador lo supervisa todo desde un dashboard.
 
+La interfaz sigue el estilo de las **consolas ITSM** profesionales (tipo
+ServiceNow): incidentes numerados `INC0000001`, navegador lateral con vistas,
+listas densas y formulario de incidente con flujo de estados.
+
 Incluye un **chat en tiempo real** entre usuarios y técnicos para intentar
 resolver el problema **en remoto antes de desplazarse** al puesto.
 
-![Chat entre usuaria y técnico](docs/img/chat.png)
+![Listado de incidentes](docs/img/tickets.png)
 
 ---
 
@@ -40,19 +44,23 @@ resolver el problema **en remoto antes de desplazarse** al puesto.
 
 ## Funcionalidades
 
-**Tickets**
-- Alta de incidencias con prioridad (Baja → Crítica), categoría y equipo afectado.
+**Incidentes**
+- Alta de incidencias con prioridad (`1 - Crítica` … `4 - Baja`), categoría y
+  equipo afectado (se preselecciona el del solicitante).
+- Cada incidente se identifica con un número tipo `INC0000012`.
 - Flujo de estados con reglas de negocio: no se trabaja un ticket sin técnico
   asignado ni se resuelve sin **diagnóstico y solución**.
 - Cálculo automático del **tiempo de resolución**.
-- Comentarios e **historial de auditoría** de cada cambio (quién, qué y cuándo).
+- Comentarios e **historial de auditoría** de cada cambio (quién, qué y
+  cuándo), mostrados juntos en un **flujo de actividad**.
 - Búsqueda de texto, filtros (estado, prioridad, categoría, técnico, fechas,
-  sin asignar), ordenación y paginación. Rápida incluso con 50 000 tickets
-  gracias a índices `pg_trgm`.
+  sin asignar), ordenación por columna y paginación. Rápida incluso con
+  50 000 tickets gracias a índices `pg_trgm`.
 
 **Dashboard** (técnicos y administradores)
 - KPIs: total, activos, sin asignar, resueltos y tiempo medio de resolución.
-- Gráficos por estado, prioridad, categoría, carga por técnico y tickets por día.
+  Al pulsarlos se abre la lista filtrada.
+- Gráficos por estado, prioridad, categoría, carga por técnico e incidentes por día.
 
 **Chat**
 - Conversaciones 1 a 1 con aspecto de app de mensajería: checks de
@@ -62,23 +70,37 @@ resolver el problema **en remoto antes de desplazarse** al puesto.
   la conexión no está disponible.
 - Botón **"Chatear con…"** en cada ticket y contador de no leídos en la barra.
 
-**Interfaz**
+**Interfaz (estilo consola ITSM)**
+- **Cabecera** con buscador global: un número (`INC0000012` o `12`) abre el
+  incidente; cualquier otro texto lo busca en todos.
+- **Navegador lateral** según el rol, con buscador propio. Empleado: *Crear
+  incidente*, *Mis incidentes* y *Chat*. Personal técnico: además *Asignados a
+  mí*, *Sin asignar*, *Abiertos*, *En progreso*, *Pendientes*, *Resueltos*,
+  *Todos los incidentes* y *Dashboard*.
+- **Listas** compactas con columnas ordenables, migas de filtro
+  (`Todos > Estado = Abierto`, cada condición con su ×) y paginador
+  (`1 a 20 de 45`). Se abre el incidente pulsando en cualquier parte de la fila.
+- **Formulario del incidente**: flujo de estados en flechas, botones de acción
+  en la cabecera (*Iniciar trabajo*, *Poner en espera*, *Reanudar*, *Resolver*,
+  *Cerrar*, *Reabrir*, *Actualizar*), campos en dos columnas y pestañas
+  *Notas* e *Información de resolución*.
 - Modo **claro y oscuro**, que se recuerda y sigue al sistema la primera vez.
 - Estados con código de color: 🔴 abierto · 🟡 en progreso / pendiente ·
   🟢 resuelto / cerrado.
-- Adaptada a móvil. HTML, CSS y JavaScript **sin frameworks** ni CDNs.
+- Adaptada a móvil (el navegador lateral se despliega con el botón ☰). HTML,
+  CSS y JavaScript **sin frameworks** ni CDNs.
 
 ---
 
 ## Capturas
 
-| Listado de tickets | Detalle (vista del técnico) |
+| Formulario del incidente (técnico) | Dashboard (modo oscuro) |
 |---|---|
-| ![Listado de tickets](docs/img/tickets.png) | ![Detalle de un ticket](docs/img/ticket.png) |
+| ![Formulario de un incidente](docs/img/ticket.png) | ![Dashboard](docs/img/dashboard.png) |
 
-| Dashboard (modo oscuro) | Chat en el móvil |
+| Chat entre técnico y empleado | Chat en el móvil |
 |---|---|
-| ![Dashboard](docs/img/dashboard.png) | ![Chat en móvil](docs/img/chat-mobile.png) |
+| ![Chat](docs/img/chat.png) | ![Chat en móvil](docs/img/chat-mobile.png) |
 
 <details>
 <summary>Chat en modo oscuro</summary>
@@ -140,17 +162,22 @@ Genera 50 000 tickets `BULK-` para probar búsquedas y dashboard con volumen.
 Abre dos ventanas: una normal y otra de incógnito (cada pestaña tiene su
 propia sesión).
 
-1. **Empleado A** (`empleadoA@empresa.test`) pulsa **Nuevo ticket** y describe un
-   problema. Solo ve sus propios tickets.
-2. **Tecnico A** (`tecnicoA@empresa.test`) abre el ticket, se lo **asigna** y lo
-   pasa a **En progreso**.
+1. **Empleado A** (`empleadoA@empresa.test`) pulsa **Crear incidente** en el
+   menú lateral, rellena la breve descripción y la descripción y pulsa
+   **Enviar**. En **Mis incidentes** solo ve los suyos.
+2. **Tecnico A** (`tecnicoA@empresa.test`) abre **Sin asignar**, entra en el
+   nuevo incidente, se lo asigna en el campo **Asignado a** y pulsa
+   **Iniciar trabajo**. Ahora aparece en **Asignados a mí**.
 3. Tecnico A pulsa **Chatear con Empleado A**: se abre el chat con
    *"Sobre el ticket #N: "* ya escrito. Empleado A ve el mensaje al instante, el
    contador rojo de **Chat** y a Tecnico A **"escribiendo…"**.
-4. Resuelto en remoto: Tecnico A registra **diagnóstico y solución** y pasa el
-   ticket a **Resuelto**. El historial lo deja todo registrado.
-5. Entra como **Administrador** (`administrador@empresa.test`) y abre el **Dashboard**. Prueba el modo oscuro con el
-   botón de la luna.
+4. Resuelto en remoto: en la pestaña **Información de resolución**, Tecnico A
+   rellena **diagnóstico y solución** y pulsa **Resolver**. La pestaña
+   **Notas** muestra toda la actividad.
+5. Prueba el buscador de la cabecera escribiendo el número del incidente
+   (por ejemplo `INC0000001`).
+6. Entra como **Administrador** (`administrador@empresa.test`) y abre el
+   **Dashboard**. Prueba el modo oscuro con el botón de la luna.
 
 ---
 
@@ -201,6 +228,17 @@ stateDiagram-v2
 
     EnProgreso: En progreso
 ```
+
+En el formulario, cada transición es un botón de la cabecera:
+
+| Desde | Botón | Hasta |
+|---|---|---|
+| Abierto | Iniciar trabajo | En progreso |
+| En progreso | Poner en espera | Pendiente |
+| Pendiente | Reanudar | En progreso |
+| En progreso | Resolver | Resuelto |
+| Resuelto | Cerrar | Cerrado |
+| Resuelto | Reabrir | En progreso |
 
 Las reglas se validan en la API (`409` si la transición no está permitida y
 `422` si faltan diagnóstico o solución). Cada cambio queda en `ticket_history`
@@ -401,7 +439,13 @@ docker run --rm --network helpdesk-ticketing-system_backend \
 │   ├── tests/                 # pytest
 │   ├── scripts/               # Utilidades de desarrollo
 │   └── Dockerfile
-├── frontend/                  # Páginas HTML, css/ y js/ (sin frameworks)
+├── frontend/
+│   ├── *.html                 # login, listado, incidente, alta, dashboard y chat
+│   ├── css/style.css          # Estilos (tema claro/oscuro y móvil)
+│   └── js/
+│       ├── api.js             # Llamadas a la API, sesión y utilidades comunes
+│       ├── layout.js          # Cabecera, buscador global y navegador lateral
+│       └── …                  # Un script por página (sin frameworks)
 ├── database/                  # Scripts SQL (ver "Modelo de datos")
 ├── nginx/
 │   ├── helpdesk.docker.conf   # Para docker compose
