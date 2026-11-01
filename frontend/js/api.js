@@ -76,21 +76,60 @@ function el(tag, text, className) {
   return node;
 }
 
+function statusClass(status) {
+  return status.toLowerCase().replace(/ /g, "-");
+}
+
 function statusBadge(status) {
-  return el("span", status, "badge " + status.toLowerCase().replace(/ /g, "-"));
+  return el("span", status, "badge " + statusClass(status));
 }
 
 function formatDate(iso) {
-  return new Date(iso).toLocaleString("es-ES");
+  return new Date(iso).toLocaleString("es-ES", {
+    year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit",
+  });
 }
 
-/** Pinta el nombre del usuario en la barra superior y devuelve sus datos. */
+/** Número visible del incidente: 12 -> "INC0000012". */
+function ticketNumber(id) {
+  return "INC" + String(id).padStart(7, "0");
+}
+
+/** "INC0000012", "inc12" o "12" -> 12. Cualquier otra cosa -> null. */
+function parseTicketNumber(text) {
+  const match = /^(?:inc)?0*(\d{1,9})$/i.exec(text.trim());
+  return match && Number(match[1]) > 0 ? Number(match[1]) : null;
+}
+
+function initials(name) {
+  return (name || "?").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join("");
+}
+
+const ROLE_LABELS = { user: "Empleado", technician: "Técnico", admin: "Administrador" };
+
+// Prioridad al estilo ITSM: "1 - Crítica" ... "4 - Baja"
+const PRIORITY_RANK = { "Crítica": 1, "Alta": 2, "Media": 3, "Baja": 4 };
+
+function priorityLabel(name) {
+  const rank = PRIORITY_RANK[name];
+  return rank ? rank + " - " + name : name;
+}
+
+function priorityTag(name) {
+  const span = el("span", null, "prio prio-" + (PRIORITY_RANK[name] || 0));
+  span.appendChild(el("span", null, "prio-dot"));
+  span.appendChild(document.createTextNode(priorityLabel(name)));
+  return span;
+}
+
+/** Pinta el usuario en la cabecera, ajusta el menú a su rol y devuelve sus datos. */
 async function loadCurrentUser() {
   document.getElementById("logout-btn").addEventListener("click", logout);
   const me = await apiFetch("/auth/me");
   document.getElementById("user-name").textContent = me.full_name;
   const dashLink = document.getElementById("dash-link");
   if (dashLink && me.role !== "user") dashLink.hidden = false;
+  if (typeof applyRoleToLayout === "function") applyRoleToLayout(me);
   startUnreadBadge();
   return me;
 }

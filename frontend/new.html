@@ -3,56 +3,62 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Help Desk - Nuevo ticket</title>
+  <title>Nuevo incidente | Help Desk</title>
   <link rel="stylesheet" href="/css/style.css">
   <script src="/js/theme.js"></script>
 </head>
 <body>
-  <nav class="topbar">
-    <span class="nav-links">
-      <a class="link" href="/"><strong>Help Desk</strong></a>
-      <a class="link" href="/">Tickets</a>
-      <a class="link" id="dash-link" href="/dashboard.html" hidden>Dashboard</a>
-      <a class="link" href="/chat.html">Chat <span id="chat-unread" class="count-badge" hidden></span></a>
-    </span>
-    <div class="user-box">
-      <span id="user-name" class="muted"></span>
-      <div class="user-actions">
-        <button id="theme-btn" class="icon-btn" type="button" title="Cambiar tema" aria-label="Cambiar tema">
-          <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-          <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
-        </button>
-        <button id="logout-btn" class="icon-btn" type="button" title="Salir" aria-label="Salir">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-        </button>
+  <main class="page page-form">
+    <form id="new-form" novalidate>
+      <div class="form-head">
+        <a class="back-link" href="/" aria-label="Volver al listado">&lsaquo;</a>
+        <div class="form-head-title">
+          <span class="record-type">Incidente</span>
+          <h1>Nuevo registro</h1>
+        </div>
+        <div class="form-actions">
+          <a class="btn btn-secondary" href="/">Cancelar</a>
+          <button type="submit" class="btn btn-primary">Enviar</button>
+        </div>
       </div>
-    </div>
-  </nav>
 
-  <main class="container">
-    <p><a class="link" href="/">&larr; Volver al listado</a></p>
-    <section class="card">
-      <h1>Nuevo ticket</h1>
-      <form id="new-form" novalidate>
-        <label for="title">Título</label>
-        <input id="title" maxlength="200">
+      <p class="error" id="error" role="alert"></p>
 
-        <label for="description">Descripción</label>
-        <textarea id="description" maxlength="2000"></textarea>
-
-        <label for="priority">Prioridad</label>
-        <select id="priority"></select>
-
-        <label for="category">Categoría</label>
-        <select id="category"></select>
-
-        <button type="submit">Crear ticket</button>
-        <p class="error" id="error" role="alert"></p>
-      </form>
-    </section>
+      <section class="form-card">
+        <div class="field-grid">
+          <div class="field-col">
+            <div class="field"><span class="f-label">Solicitante</span><span class="f-value readonly" id="caller"></span></div>
+            <div class="field">
+              <label class="f-label required" for="category">Categoría</label>
+              <select class="f-value" id="category"></select>
+            </div>
+            <div class="field">
+              <label class="f-label" for="computer">Equipo afectado</label>
+              <select class="f-value" id="computer"><option value="">-- Ninguno --</option></select>
+            </div>
+          </div>
+          <div class="field-col">
+            <div class="field"><span class="f-label">Estado</span><span class="f-value readonly"><span class="badge abierto">Abierto</span></span></div>
+            <div class="field">
+              <label class="f-label required" for="priority">Prioridad</label>
+              <select class="f-value" id="priority"></select>
+            </div>
+          </div>
+        </div>
+        <div class="field field-wide">
+          <label class="f-label required" for="title">Breve descripción</label>
+          <input class="f-value" id="title" maxlength="200" placeholder="Resumen del problema en una línea">
+        </div>
+        <div class="field field-wide">
+          <label class="f-label required" for="description">Descripción</label>
+          <textarea class="f-value tall" id="description" maxlength="2000" placeholder="Qué ocurre, desde cuándo y qué has probado"></textarea>
+        </div>
+      </section>
+    </form>
   </main>
 
   <script src="/js/api.js"></script>
+  <script src="/js/layout.js"></script>
   <script src="/js/new.js"></script>
 </body>
 </html>

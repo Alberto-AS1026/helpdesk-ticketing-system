@@ -4,7 +4,7 @@ requireLogin();
 
 const $ = (id) => document.getElementById(id);
 
-const ROLE_LABELS = { user: "Usuario", technician: "Técnico", admin: "Administrador" };
+// ROLE_LABELS, initials() y SVG_NS vienen de api.js y layout.js
 // Sin WebSocket (plan B) se consulta a menudo; con WebSocket, los avisos
 // llegan al instante y la consulta periódica es solo una red de seguridad
 const SYNC_MS = 2500;
@@ -20,8 +20,6 @@ const EMOJIS = [
   "✅", "❌", "⚠️", "❓", "❗", "🔥", "🎉", "💡", "⏰", "📌",
   "💻", "🖥️", "🖨️", "⌨️", "🖱️", "📶", "🔌", "🔒", "📧", "📞",
 ];
-
-const SVG_NS = "http://www.w3.org/2000/svg";
 
 const state = {
   me: null,
@@ -42,10 +40,6 @@ const state = {
 };
 
 // ---------- Utilidades de presentación ----------
-
-function initials(name) {
-  return name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join("");
-}
 
 function avatar(node, name) {
   let hash = 0;

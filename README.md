@@ -112,13 +112,15 @@ automáticamente. Para empezar de cero: `docker compose down -v && docker compos
 
 ### Usuarios de prueba
 
-Contraseña para todos: **`Helpdesk_2026`** (solo para desarrollo).
+Contraseña: nombre sin espacios + `Help2026` (solo para desarrollo).
 
-| Email | Rol | Qué puede hacer |
-|---|---|---|
-| `admin@empresa.test` | Administrador | Todo, incluida la gestión de usuarios y catálogos |
-| `pablo@empresa.test` · `ana@empresa.test` | Técnico | Asignar, diagnosticar y resolver; ver el dashboard |
-| `laura@empresa.test` · `carlos@empresa.test` · `marta@empresa.test` | Usuario | Abrir tickets, ver y comentar los suyos, chatear con técnicos |
+| Email | Contraseña | Rol | Qué puede hacer |
+|---|---|---|---|
+| `administrador@empresa.test` | `AdministradorHelp2026` | Administrador | Todo, incluida la gestión de usuarios y catálogos |
+| `tecnicoA@empresa.test` | `TecnicoAHelp2026` | Técnico | Asignar, diagnosticar y resolver; ver el dashboard |
+| `tecnicoB@empresa.test` | `TecnicoBHelp2026` | Técnico | Asignar, diagnosticar y resolver; ver el dashboard |
+| `empleadoA@empresa.test` | `EmpleadoAHelp2026` | Usuario | Abrir tickets, ver y comentar los suyos, chatear con técnicos |
+| `empleadoB@empresa.test` | `EmpleadoBHelp2026` | Usuario | Abrir tickets, ver y comentar los suyos, chatear con técnicos |
 
 <details>
 <summary>Datos de volumen para pruebas de rendimiento (opcional)</summary>
@@ -138,16 +140,16 @@ Genera 50 000 tickets `BULK-` para probar búsquedas y dashboard con volumen.
 Abre dos ventanas: una normal y otra de incógnito (cada pestaña tiene su
 propia sesión).
 
-1. **Laura** (`laura@empresa.test`) pulsa **Nuevo ticket** y describe un
+1. **Empleado A** (`empleadoA@empresa.test`) pulsa **Nuevo ticket** y describe un
    problema. Solo ve sus propios tickets.
-2. **Pablo** (`pablo@empresa.test`) abre el ticket, se lo **asigna** y lo
+2. **Tecnico A** (`tecnicoA@empresa.test`) abre el ticket, se lo **asigna** y lo
    pasa a **En progreso**.
-3. Pablo pulsa **Chatear con Laura Gómez**: se abre el chat con
-   *"Sobre el ticket #N: "* ya escrito. Laura ve el mensaje al instante, el
-   contador rojo de **Chat** y a Pablo **"escribiendo…"**.
-4. Resuelto en remoto: Pablo registra **diagnóstico y solución** y pasa el
+3. Tecnico A pulsa **Chatear con Empleado A**: se abre el chat con
+   *"Sobre el ticket #N: "* ya escrito. Empleado A ve el mensaje al instante, el
+   contador rojo de **Chat** y a Tecnico A **"escribiendo…"**.
+4. Resuelto en remoto: Tecnico A registra **diagnóstico y solución** y pasa el
    ticket a **Resuelto**. El historial lo deja todo registrado.
-5. Entra como **admin** y abre el **Dashboard**. Prueba el modo oscuro con el
+5. Entra como **Administrador** (`administrador@empresa.test`) y abre el **Dashboard**. Prueba el modo oscuro con el
    botón de la luna.
 
 ---
@@ -230,13 +232,13 @@ en la misma transacción.
 
 ```mermaid
 sequenceDiagram
-    participant P as Pablo (técnico)
+    participant P as Tecnico A
     participant API as API
-    participant L as Laura (usuaria)
+    participant L as Empleado A
 
     L->>API: WebSocket /chat/ws + {"type":"auth","token":…}
     API-->>L: ready
-    API-->>P: presence: Laura en línea
+    API-->>P: presence: Empleado A en línea
     P->>API: {"type":"typing"} por WebSocket
     API-->>L: typing → "escribiendo…"
     P->>API: POST /chat/conversations/1/messages
@@ -278,7 +280,7 @@ Ejemplo:
 
 ```bash
 TOKEN=$(curl -s -X POST localhost:8080/api/auth/login \
-  -d 'username=pablo@empresa.test&password=Helpdesk_2026' | jq -r .access_token)
+  -d 'username=tecnicoA@empresa.test&password=TecnicoAHelp2026' | jq -r .access_token)
 
 curl -s "localhost:8080/api/tickets?status=Abierto&sort=priority" \
   -H "Authorization: Bearer $TOKEN" | jq '.items[] | {id, title, priority_name}'
