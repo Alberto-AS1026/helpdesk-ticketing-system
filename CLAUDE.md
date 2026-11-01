@@ -28,7 +28,7 @@ python -m pytest tests/test_tickets_rules.py -q          # un fichero
 python -m pytest tests/test_chat.py::test_nombre -q      # un test
 ```
 
-Si solo está la pila de Docker (la base no tiene puerto publicado), sigue el bloque "Tests e integración continua" del README: crear `helpdesk_test`, cargar los tres SQL y ejecutar pytest en un contenedor `python:3.13-slim` conectado a la red `helpdesk-ticketing-system_backend`. CI (`.github/workflows/tests.yml`) hace lo mismo con un service container de Postgres.
+Si solo está la pila de Docker (la base no tiene puerto publicado), sigue la sección "Tests" de `backend/README.md`: crear `helpdesk_test`, cargar los tres SQL y ejecutar pytest en un contenedor `python:3.13-slim` conectado a la red `helpdesk-ticketing-system_backend`. CI (`.github/workflows/tests.yml`) hace lo mismo con un service container de Postgres.
 
 No hay linter configurado.
 
