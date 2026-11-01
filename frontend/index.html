@@ -3,85 +3,86 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Help Desk - Tickets</title>
+  <title>Incidentes | Help Desk</title>
   <link rel="stylesheet" href="/css/style.css">
   <script src="/js/theme.js"></script>
 </head>
 <body>
-  <nav class="topbar">
-    <span class="nav-links">
-      <a class="link" href="/"><strong>Help Desk</strong></a>
-      <a class="link" href="/">Tickets</a>
-      <a class="link" id="dash-link" href="/dashboard.html" hidden>Dashboard</a>
-      <a class="link" href="/chat.html">Chat <span id="chat-unread" class="count-badge" hidden></span></a>
-    </span>
-    <div class="user-box">
-      <span id="user-name" class="muted"></span>
-      <div class="user-actions">
-        <button id="theme-btn" class="icon-btn" type="button" title="Cambiar tema" aria-label="Cambiar tema">
-          <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-          <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
-        </button>
-        <button id="logout-btn" class="icon-btn" type="button" title="Salir" aria-label="Salir">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-        </button>
+  <main class="page">
+    <div class="list-head">
+      <div class="list-title">
+        <h1 id="list-title">Incidentes</h1>
+        <span class="muted" id="list-count"></span>
       </div>
-    </div>
-  </nav>
-
-  <main class="container">
-    <div class="header-row">
-      <h1>Tickets</h1>
-      <a class="btn-link" href="/new.html">Nuevo ticket</a>
+      <div class="list-tools">
+        <div class="search-field">
+          <label class="sr-only" for="f-q">Buscar en el listado</label>
+          <input id="f-q" type="search" maxlength="100" placeholder="Buscar en descripción (mín. 3 letras)">
+        </div>
+        <button id="filter-btn" class="btn btn-secondary" type="button" aria-expanded="false" aria-controls="filter-panel">Filtros</button>
+        <a class="btn btn-primary" href="/new.html">Nuevo</a>
+      </div>
     </div>
 
-    <div class="toolbar">
-      <div>
-        <label for="f-q">Buscar (mín. 3 letras)</label>
-        <input id="f-q" type="search" maxlength="100" placeholder="wifi, impresora...">
+    <div class="breadcrumbs" id="breadcrumbs" aria-label="Condiciones del filtro"></div>
+
+    <section class="filter-panel" id="filter-panel" hidden>
+      <div class="filter-grid">
+        <div>
+          <label for="f-status">Estado</label>
+          <select id="f-status">
+            <option value="">-- Cualquiera --</option>
+            <option>Abierto</option>
+            <option>En progreso</option>
+            <option>Pendiente</option>
+            <option>Resuelto</option>
+            <option>Cerrado</option>
+          </select>
+        </div>
+        <div>
+          <label for="f-priority">Prioridad</label>
+          <select id="f-priority"><option value="">-- Cualquiera --</option></select>
+        </div>
+        <div>
+          <label for="f-category">Categoría</label>
+          <select id="f-category"><option value="">-- Cualquiera --</option></select>
+        </div>
+        <div data-staff hidden>
+          <label for="f-tech">Asignado a</label>
+          <select id="f-tech"><option value="">-- Cualquiera --</option></select>
+        </div>
+        <div>
+          <label for="f-from">Creado desde</label>
+          <input id="f-from" type="date">
+        </div>
+        <div>
+          <label for="f-to">Creado hasta</label>
+          <input id="f-to" type="date">
+        </div>
+        <div class="checkbox-row" data-staff hidden>
+          <input id="f-unassigned" type="checkbox">
+          <label for="f-unassigned">Solo sin asignar</label>
+        </div>
       </div>
-      <div>
-        <label for="f-status">Estado</label>
-        <select id="f-status">
-          <option value="">Todos</option>
-          <option>Abierto</option>
-          <option>En progreso</option>
-          <option>Pendiente</option>
-          <option>Resuelto</option>
-          <option>Cerrado</option>
-        </select>
+      <div class="filter-actions">
+        <button id="clear-btn" class="btn btn-secondary" type="button">Limpiar filtros</button>
       </div>
-      <div>
-        <label for="f-priority">Prioridad</label>
-        <select id="f-priority"><option value="">Todas</option></select>
-      </div>
-      <div>
-        <label for="f-category">Categoría</label>
-        <select id="f-category"><option value="">Todas</option></select>
-      </div>
-      <div>
-        <label for="f-sort">Ordenar por</label>
-        <select id="f-sort">
-          <option value="created_at:desc">Más recientes</option>
-          <option value="created_at:asc">Más antiguos</option>
-          <option value="priority:desc">Prioridad (alta primero)</option>
-          <option value="status:asc">Estado</option>
-        </select>
-      </div>
-      <div class="checkbox-row" id="unassigned-row" hidden>
-        <input id="f-unassigned" type="checkbox">
-        <label for="f-unassigned">Solo sin asignar</label>
-      </div>
-    </div>
+    </section>
 
     <p id="message" class="error" role="alert"></p>
 
     <div class="table-wrap">
-      <table>
+      <table class="list-table">
         <thead>
           <tr>
-            <th>#</th><th>Título</th><th>Estado</th><th>Prioridad</th>
-            <th>Categoría</th><th>Creado por</th><th>Técnico</th><th>Fecha</th>
+            <th><button class="sort-btn" type="button" data-sort="id">Número</button></th>
+            <th>Breve descripción</th>
+            <th>Solicitante</th>
+            <th><button class="sort-btn" type="button" data-sort="priority">Prioridad</button></th>
+            <th><button class="sort-btn" type="button" data-sort="status">Estado</button></th>
+            <th>Categoría</th>
+            <th>Asignado a</th>
+            <th><button class="sort-btn" type="button" data-sort="created_at">Creado</button></th>
           </tr>
         </thead>
         <tbody id="tickets-body"></tbody>
@@ -89,13 +90,18 @@
     </div>
 
     <div class="pager">
-      <button id="prev-btn" type="button">Anterior</button>
       <span id="page-info" class="muted"></span>
-      <button id="next-btn" type="button">Siguiente</button>
+      <div class="pager-btns">
+        <button id="first-btn" class="btn btn-secondary btn-icon" type="button" aria-label="Primera página">&laquo;</button>
+        <button id="prev-btn" class="btn btn-secondary btn-icon" type="button" aria-label="Página anterior">&lsaquo;</button>
+        <button id="next-btn" class="btn btn-secondary btn-icon" type="button" aria-label="Página siguiente">&rsaquo;</button>
+        <button id="last-btn" class="btn btn-secondary btn-icon" type="button" aria-label="Última página">&raquo;</button>
+      </div>
     </div>
   </main>
 
   <script src="/js/api.js"></script>
+  <script src="/js/layout.js"></script>
   <script src="/js/tickets.js"></script>
 </body>
 </html>

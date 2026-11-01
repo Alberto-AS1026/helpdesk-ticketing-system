@@ -3,93 +3,90 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Help Desk - Ticket</title>
+  <title>Incidente | Help Desk</title>
   <link rel="stylesheet" href="/css/style.css">
   <script src="/js/theme.js"></script>
 </head>
 <body>
-  <nav class="topbar">
-    <span class="nav-links">
-      <a class="link" href="/"><strong>Help Desk</strong></a>
-      <a class="link" href="/">Tickets</a>
-      <a class="link" id="dash-link" href="/dashboard.html" hidden>Dashboard</a>
-      <a class="link" href="/chat.html">Chat <span id="chat-unread" class="count-badge" hidden></span></a>
-    </span>
-    <div class="user-box">
-      <span id="user-name" class="muted"></span>
-      <div class="user-actions">
-        <button id="theme-btn" class="icon-btn" type="button" title="Cambiar tema" aria-label="Cambiar tema">
-          <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-          <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
-        </button>
-        <button id="logout-btn" class="icon-btn" type="button" title="Salir" aria-label="Salir">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-        </button>
+  <main class="page page-form">
+    <div class="form-head">
+      <a class="back-link" href="/" id="back-link" aria-label="Volver al listado">&lsaquo;</a>
+      <div class="form-head-title">
+        <span class="record-type">Incidente</span>
+        <h1 id="t-number">Cargando…</h1>
+      </div>
+      <div class="form-actions" id="form-actions">
+        <a class="btn btn-secondary" id="chat-link" href="/chat.html" hidden></a>
+        <span id="status-actions" class="action-group"></span>
+        <button class="btn btn-primary" id="update-btn" type="button" hidden>Actualizar</button>
       </div>
     </div>
-  </nav>
 
-  <main class="container">
-    <p><a class="link" href="/">&larr; Volver al listado</a></p>
+    <ol class="process-flow" id="process-flow" aria-label="Estado del incidente"></ol>
+
     <p id="message" class="error" role="alert"></p>
+    <p class="ok" id="action-ok" role="status"></p>
 
-    <div class="grid-2">
-      <div>
-        <section class="card" id="detail-card" hidden>
-          <h1 id="t-title"></h1>
-          <dl class="details" id="t-details"></dl>
-          <p class="chat-cta" id="chat-cta" hidden>
-            <a class="btn-link" id="chat-link" href="/chat.html"></a>
-          </p>
-        </section>
+    <section class="form-card" id="detail-card" hidden>
+      <div class="field-grid">
+        <div class="field-col">
+          <div class="field"><span class="f-label">Número</span><span class="f-value readonly" id="f-number"></span></div>
+          <div class="field"><span class="f-label">Solicitante</span><span class="f-value readonly" id="f-caller"></span></div>
+          <div class="field"><span class="f-label">Categoría</span><span class="f-value readonly" id="f-category"></span></div>
+          <div class="field"><span class="f-label">Equipo afectado</span><span class="f-value readonly" id="f-computer"></span></div>
+          <div class="field"><span class="f-label">Creado</span><span class="f-value readonly" id="f-created"></span></div>
+        </div>
+        <div class="field-col">
+          <div class="field"><span class="f-label">Estado</span><span class="f-value readonly" id="f-status"></span></div>
+          <div class="field"><span class="f-label">Prioridad</span><span class="f-value readonly" id="f-priority"></span></div>
+          <div class="field">
+            <label class="f-label" for="f-assigned">Asignado a</label>
+            <span class="f-value readonly" id="f-assigned-ro"></span>
+            <select class="f-value" id="f-assigned" hidden></select>
+          </div>
+          <div class="field" id="row-resolved" hidden><span class="f-label">Resuelto</span><span class="f-value readonly" id="f-resolved"></span></div>
+          <div class="field" id="row-time" hidden><span class="f-label">Tiempo de resolución</span><span class="f-value readonly" id="f-time"></span></div>
+        </div>
+      </div>
+      <div class="field field-wide"><span class="f-label">Breve descripción</span><span class="f-value readonly" id="f-title"></span></div>
+      <div class="field field-wide"><span class="f-label">Descripción</span><span class="f-value readonly multiline" id="f-description"></span></div>
+    </section>
 
-        <section class="card" id="comments-card" hidden>
-          <h2>Comentarios</h2>
-          <ul class="thread" id="comments"></ul>
-          <form id="comment-form" novalidate>
-            <label for="comment-text">Añadir comentario</label>
-            <textarea id="comment-text" maxlength="2000"></textarea>
-            <button type="submit">Comentar</button>
-            <p class="error" id="comment-error" role="alert"></p>
-          </form>
-        </section>
-
-        <section class="card" id="history-card" hidden>
-          <h2>Historial</h2>
-          <ul class="thread" id="history"></ul>
-        </section>
+    <section class="form-card tabs-card" id="tabs-card" hidden>
+      <div class="tabs" role="tablist">
+        <button class="tab active" type="button" role="tab" id="tab-notes" aria-selected="true" aria-controls="panel-notes">Notas</button>
+        <button class="tab" type="button" role="tab" id="tab-resolution" aria-selected="false" aria-controls="panel-resolution">Información de resolución</button>
       </div>
 
-      <aside id="staff-panel" hidden>
-        <section class="card">
-          <h2>Asignar técnico</h2>
-          <form id="assign-form" novalidate>
-            <select id="technician"></select>
-            <button type="submit">Asignar</button>
-          </form>
-        </section>
+      <div class="tab-panel" id="panel-notes" role="tabpanel" aria-labelledby="tab-notes">
+        <form id="comment-form" class="note-form" novalidate>
+          <label for="comment-text">Comentarios adicionales <span class="muted" id="caller-visible" hidden>(visibles para el solicitante)</span></label>
+          <textarea id="comment-text" maxlength="2000" placeholder="Escribe un comentario…"></textarea>
+          <div class="note-actions">
+            <p class="error" id="comment-error" role="alert"></p>
+            <button type="submit" class="btn btn-primary">Publicar</button>
+          </div>
+        </form>
+        <h2 class="activity-title">Actividades</h2>
+        <ul class="activity" id="activity"></ul>
+      </div>
 
-        <section class="card">
-          <h2>Cambiar estado</h2>
-          <form id="status-form" novalidate>
-            <label for="new-status">Nuevo estado</label>
-            <select id="new-status"></select>
-            <label for="diagnosis">Diagnóstico</label>
-            <textarea id="diagnosis" maxlength="2000"></textarea>
-            <label for="solution">Solución</label>
-            <textarea id="solution" maxlength="2000"></textarea>
-            <button type="submit">Guardar</button>
-          </form>
-          <p class="muted">Para resolver hacen falta diagnóstico y solución.</p>
-        </section>
-
-        <p class="error" id="action-error" role="alert"></p>
-        <p class="ok" id="action-ok" role="status"></p>
-      </aside>
-    </div>
+      <div class="tab-panel" id="panel-resolution" role="tabpanel" aria-labelledby="tab-resolution" hidden>
+        <div class="field field-wide">
+          <label class="f-label" for="diagnosis">Diagnóstico</label>
+          <textarea class="f-value" id="diagnosis" maxlength="2000"></textarea>
+        </div>
+        <div class="field field-wide">
+          <label class="f-label" for="solution">Solución</label>
+          <textarea class="f-value" id="solution" maxlength="2000"></textarea>
+        </div>
+        <p class="muted hint" id="resolution-hint">Para resolver el incidente hacen falta diagnóstico y solución.</p>
+      </div>
+    </section>
   </main>
 
   <script src="/js/api.js"></script>
+  <script src="/js/layout.js"></script>
   <script src="/js/ticket.js"></script>
 </body>
 </html>
