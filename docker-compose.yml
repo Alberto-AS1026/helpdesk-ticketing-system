@@ -1,3 +1,6 @@
+# Nombre fijo del proyecto en Docker (no depende del nombre de la carpeta)
+name: helpdesk-ticketing-system
+
 services:
   db:
     image: postgres:16
